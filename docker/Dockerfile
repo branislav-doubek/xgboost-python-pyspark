@@ -56,7 +56,7 @@ RUN git clone --recursive https://github.com/dmlc/xgboost && \
 	cd jvm-packages; mvn package
 
 WORKDIR /home
-RUN git clone https://github.com/ShandiLin/xgb_demo.git
+RUN git clone https://github.com/branislav-doubek/xgboost-python-pyspark.git
 RUN mkdir /home/xgb_demo/pyspark_xgb/jars
 WORKDIR /home/xgb_demo/pyspark_xgb/jars
 RUN cp /home/xgboost/jvm-packages/xgboost4j/target/xgboost4j-0.82*.jar ./xgboost4j-0.82.jar
