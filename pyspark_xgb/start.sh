@@ -11,5 +11,6 @@ JARS_PATH=${SERVICE_HOME}/jars/
 spark-submit \
     --name 'spark xgb sample' \
     --master local \
+    --conf spark.kubernetes.pyspark.pythonVersion=3
     --jars ${JARS_PATH}/xgboost4j-spark-0.82.jar,${JARS_PATH}/xgboost4j-0.82.jar \
     ${SERVICE_HOME}/${EXEC_PY}
