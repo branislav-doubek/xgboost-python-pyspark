@@ -57,8 +57,8 @@ RUN git clone --recursive https://github.com/dmlc/xgboost && \
 
 WORKDIR /home
 RUN git clone https://github.com/branislav-doubek/xgboost-python-pyspark.git
-RUN mkdir /home/xgb_demo/pyspark_xgb/jars
-WORKDIR /home/xgb_demo/pyspark_xgb/jars
+RUN mkdir /home/xgboost-python-pyspark/pyspark_xgb/jars
+WORKDIR /home/xgboost-python-pyspark/pyspark_xgb/jars
 RUN cp /home/xgboost/jvm-packages/xgboost4j/target/xgboost4j-0.82*.jar ./xgboost4j-0.82.jar
 RUN cp /home/xgboost/jvm-packages/xgboost4j-spark/target/xgboost4j-spark-0.82*.jar ./xgboost4j-spark-0.82.jar
 
@@ -72,12 +72,17 @@ RUN mv spark-2.4.0-bin-hadoop2.6 /usr/local/
 ENV SPARK_HOME /usr/local/spark-2.4.0-bin-hadoop2.6
 ENV PATH "$PATH:$SPARK_HOME/bin"
 ENV JAVA_HOME /usr/lib/jvm/java
+ENV PYSPARK_PYTHON=python3.7
 
 # install pip & python packages
 WORKDIR /home
 RUN curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
 RUN python3.7 get-pip.py
 RUN python3.7 -m pip install --upgrade pip
-RUN pip install pandas===0.23.4 xgboost===0.82 sklearn===0.0
+RUN pip install pandas===0.23.4 xgboost===0.82 numpy sklearn
 
-CMD cd /home/xgb_demo
+CMD cd /home/xgboost-python-pyspark
+
+
+#docker build -t doubekspark:latest . --no-cache
+#docker run -i -t doubekspark:latest /bin/bash
