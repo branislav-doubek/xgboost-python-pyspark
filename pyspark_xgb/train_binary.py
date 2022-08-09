@@ -47,13 +47,12 @@ def main():
         logger = get_logger(spark, "app")
 
         # load data
-        train = spark.read.schema(get_btrain_schema()).option('header', True).csv(
-            DATASET_PATH + '/emp_train.csv')
-        test = spark.read.schema(get_btrain_schema()).option('header', True).csv(
-            DATASET_PATH + '/emp_test.csv')
+        train = spark.read.parquet(DATASET_PATH + '/train')
+        valid = spark.read.parquet(DATASET_PATH + '/valid')
+        valid = spark.read.parquet(DATASET_PATH + '/test')
 
         # preprocess
-        LABEL = 'Attrition'
+        LABEL = 'label'
         FEATURES = 'features'
         features = [c for c in train.columns if c != LABEL]
         assembler = VectorAssembler(inputCols=features, outputCol=FEATURES)
@@ -62,7 +61,7 @@ def main():
 
         # set param map
         xgb_params = {
-            "eta": 0.1, "eval_metric": "logloss",
+            "eta": 0.1, "eval_metric": "log_loss",
             "gamma": 0, "max_depth": 5, "min_child_weight": 1.0,
             "objective": "binary:logistic", "seed": 0,
             # xgboost4j only
