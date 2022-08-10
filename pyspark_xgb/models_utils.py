@@ -9,6 +9,7 @@ from pyspark.sql import DataFrame
 from pyspark.ml.feature import VectorAssembler, QuantileDiscretizer
 from pyspark.mllib.evaluation import MulticlassMetrics, BinaryClassificationMetrics
 from typing import Any, Dict, List, Union, cast
+from pyspark.ml.wrapper import JavaWrapper
 
 
 @dataclass
