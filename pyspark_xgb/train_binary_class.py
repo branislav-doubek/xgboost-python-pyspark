@@ -12,7 +12,6 @@ from pyspark.ml.wrapper import JavaWrapper
 from spark import get_spark, get_logger
 from schema import get_btrain_schema
 from utils import create_feature_map, create_feature_imp, print_summary
-from models_utils import 
 
 # assert len(os.environ.get('JAVA_HOME')) != 0, 'JAVA_HOME not set'
 assert len(os.environ.get('SPARK_HOME')) != 0, 'SPARK_HOME not set'
