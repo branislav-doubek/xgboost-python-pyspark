@@ -61,8 +61,8 @@ def main():
             min_child_weight = trial.suggest_float('min_child_weight', 1, 50)
             colsample_bytree = trial.suggest_float('colsample_bytree', 0.3, 1)
             params = DevXGBoostModelHyperparams()
-            params.eval_metric = config['modeling']['eval_metric']
-            params.objective = config['modeling']['objective']
+            params.eval_metric = 'aucpr'
+            params.objective = 'binary:logistic'
             params.max_depth = max_depth
             params.eta = eta
             params.gamma = gamma
