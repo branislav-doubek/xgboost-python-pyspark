@@ -69,17 +69,10 @@ def main():
             params.subsample = subsample
             params.min_child_weight = min_child_weight
             params.colsample_bytree = colsample_bytree
-            logging.info('parameters')
-            logging.info(params)
-            model1 = DevXGBoostModel(params, XGBoostEstimator, feature_cols, label_col, actions=[])
-            model2 = DevXGBoostModel(params, XGBoostEstimator, feature_cols, label_col, actions=[])
-            train1 = train.filter(f.col('CD_PERIOD') < 202203)
-            train2 = train.filter(f.col('CD_PERIOD') >= 202203)
-            valid1 = valid.filter(f.col('CD_PERIOD') < 202203)
-            valid2 = valid.filter(f.col('CD_PERIOD') >= 202203)
-            score1 = model1.cross_validate(train1, valid1)
-            score2 = model2.cross_validate(train2, valid2)
-            score = (score1+score2) / 2
+            model = DevXGBoostModel(params, XGBoostEstimator, feature_cols, label_col, actions=[])
+            train = train
+            valid = valid
+            score = model.cross_validate(train, valid)
             return score
     
         study = optuna.create_study(direction='maximize')
