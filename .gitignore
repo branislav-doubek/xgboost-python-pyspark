@@ -47,3 +47,4 @@ scala_xgb/
 jars/
 binary_model/
 multi_model/
+docker/data/

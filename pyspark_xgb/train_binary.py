@@ -12,7 +12,9 @@ from pyspark.ml.wrapper import JavaWrapper
 from spark import get_spark, get_logger
 from schema import get_btrain_schema
 from utils import create_feature_map, create_feature_imp, print_summary
-
+from models_utils import (
+    DevXGBoostModelHyperparams,
+    DevXGBoostModel)
 
 # assert len(os.environ.get('JAVA_HOME')) != 0, 'JAVA_HOME not set'
 assert len(os.environ.get('SPARK_HOME')) != 0, 'SPARK_HOME not set'
@@ -26,14 +28,6 @@ DATASET_PATH = PARENT_PROJ_PATH + '/dataset'
 MODEL_PATH = PYSPARK_PROJ_PATH + '/binary_model'
 LOCAL_MODEL_PATH = PARENT_PROJ_PATH + '/python_xgb/binary_model'
 
-
-def udf_logloss(truth, pred, eps=1e-15):
-    import math
-
-    def logloss_(truth, pred):
-        pred = eps if float(pred[1]) < eps else float(pred[1])
-        return -(truth * math.log(pred) + (1 - truth) * math.log(1 - pred))
-    return F.udf(logloss_, FloatType())(truth, pred)
 
 
 def main():
@@ -49,89 +43,68 @@ def main():
         # load data
         train = spark.read.parquet(DATASET_PATH + '/train')
         valid = spark.read.parquet(DATASET_PATH + '/valid')
-        valid = spark.read.parquet(DATASET_PATH + '/test')
+        test = spark.read.parquet(DATASET_PATH + '/test')
 
-        # preprocess
-        LABEL = 'label'
-        FEATURES = 'features'
-        features = [c for c in train.columns if c != LABEL]
-        assembler = VectorAssembler(inputCols=features, outputCol=FEATURES)
-        train = assembler.transform(train).select(FEATURES, LABEL)
-        test = assembler.transform(test).select(FEATURES, LABEL)
+        safe_cols = [
+            'ID_CUSTOMER',
+            'label',
+            'CD_PERIOD']
 
-        # set param map
-        xgb_params = {
-            "eta": 0.1, "eval_metric": "log_loss",
-            "gamma": 0, "max_depth": 5, "min_child_weight": 1.0,
-            "objective": "binary:logistic", "seed": 0,
-            # xgboost4j only
-            "num_round": 100, "num_early_stopping_rounds": 10,
-            "maximize_evaluation_metrics": False,   # minimize logloss
-            "num_workers": 1, "use_external_memory": False,
-            "missing": np.nan,
-        }
-        scala_map = spark._jvm.PythonUtils.toScalaMap(xgb_params)
+        feature_cols = [col for col in train.columns if col not in safe_cols]
+        label_col = 'label'
 
-        # set evaluation set
-        eval_set = {'eval': test._jdf}
-        scala_eval_set = spark._jvm.PythonUtils.toScalaMap(eval_set)
+    def objective(trial):
+        max_depth = trial.suggest_int('max_depth', 5, 30)
+        eta = trial.suggest_loguniform('eta', 0.001, 0.01)
+        gamma = trial.suggest_float('gamma', 1, 30)
+        subsample = trial.suggest_float('subsample', 0.01, 0.6)
+        min_child_weight = trial.suggest_float('min_child_weight', 1, 50)
+        colsample_bytree = trial.suggest_float('colsample_bytree', 0.3, 1)
+        params = DevXGBoostModelHyperparams()
+        params.eval_metric = config['modeling']['eval_metric']
+        params.objective = config['modeling']['objective']
+        params.max_depth = max_depth
+        params.eta = eta
+        params.gamma = gamma
+        params.subsample = subsample
+        params.min_child_weight = min_child_weight
+        params.colsample_bytree = colsample_bytree
+        logging.info('parameters')
+        logging.info(params)
+        model1 = DevXGBoostModel(params, XGBoostEstimator, feature_cols, label_col, actions=[])
+        model2 = DevXGBoostModel(params, XGBoostEstimator, feature_cols, label_col, actions=[])
+        train1 = train.filter(f.col('CD_PERIOD') < 202203)
+        train2 = train.filter(f.col('CD_PERIOD') >= 202203)
+        valid1 = valid.filter(f.col('CD_PERIOD') < 202203)
+        valid2 = valid.filter(f.col('CD_PERIOD') >= 202203)
+        score1 = model1.cross_validate(train1, valid1)
+        score2 = model2.cross_validate(train2, valid2)
+        score = (score1+score2) / 2
+        return score
+    
+    study = optuna.create_study(direction='maximize')
+    study.optimize(objective, n_trials=2)
 
-        logger.info('training')
-        j = JavaWrapper._new_java_obj(
-            "ml.dmlc.xgboost4j.scala.spark.XGBoostClassifier", scala_map) \
-            .setFeaturesCol(FEATURES).setLabelCol(LABEL) \
-            .setEvalSets(scala_eval_set)
-        jmodel = j.fit(train._jdf)
-        print_summary(jmodel)
+    params = DevXGBoostModelHyperparams()
+    params.colsample_bytree = best_params['colsample_bytree']
+    params.eta = best_params['eta']
+    params.gamma = best_params['gamma']
+    params.max_depth = best_params['max_depth']
+    params.min_child_weight = best_params['min_child_weight']
+    params.subsample = best_params['subsample']
 
-        # get validation metric
-        preds = jmodel.transform(test._jdf)
-        pred = DataFrame(preds, spark)
-        slogloss = pred.withColumn('log_loss', udf_logloss(LABEL, 'probability')) \
-            .agg({"log_loss": "mean"}).collect()[0]['avg(log_loss)']
-        logger.info('[xgboost4j] valid logloss: {}'.format(slogloss))
+    print('Best parameters of the model:')
+    print(params) 
 
-        # save model - using native booster for single node library to read
-        model_path = MODEL_PATH + '/model.bin'
-        logger.info('save model to {}'.format(model_path))
-        jbooster = jmodel.nativeBooster()
-        jbooster.saveModel(model_path)
+    model = DevXGBoostModel(params, XGBoostEstimator, feature_cols, label_col, actions=[])
+    score = model.cross_validate(train, valid)
 
-        # get feature score
-        imp_type = "gain"
-        feature_map_path = MODEL_PATH + '/feature.map'
-        create_feature_map(feature_map_path, features)
-        jfeatureMap = jbooster.getScore(feature_map_path, imp_type)
-        f_imp = dict()
-        for feature in features:
-            if not jfeatureMap.get(feature).isEmpty():
-                f_imp[feature] = jfeatureMap.get(feature).get()
-        feature_imp_path = MODEL_PATH + '/feature.imp'
-        create_feature_imp(feature_imp_path, f_imp)
 
-        # [Optional] load model training by xgboost, predict and get validation metric
-        local_model_path = LOCAL_MODEL_PATH + '/model.bin'
-        if os.path.exists(local_model_path):
-            logger.info('load model from {}'.format(local_model_path))
-            scala_xgb = spark.sparkContext._jvm.ml.dmlc.xgboost4j.scala.XGBoost
-            jbooster = scala_xgb.loadModel(local_model_path)
-
-            # uid, num_class, booster
-            xgb_cls_model = JavaWrapper._new_java_obj(
-                "ml.dmlc.xgboost4j.scala.spark.XGBoostClassificationModel",
-                "xgbc", 2, jbooster)
-
-            jpred = xgb_cls_model.transform(test._jdf)
-            pred = DataFrame(jpred, spark)
-            slogloss = pred.withColumn('log_loss', udf_logloss(LABEL, 'probability')) \
-                .agg({"log_loss": "mean"}).collect()[0]['avg(log_loss)']
-            logger.info('[xgboost] valid logloss: {}'.format(slogloss))
-        else:
-            logger.info(
-                "local model is not exist, call python_xgb/train_binary.py to get the model "
-                "and compare logloss between xgboost and xgboost4j"
-            )
-
+    from pyspark.mllib.evaluation import MulticlassMetrics
+    predictions = model.predict(test)
+    predictions_labels = predictions.rdd.map(lambda x: (x['prediction'], x['label']))
+    metrics = MulticlassMetrics(predictions_labels)
+    
     except Exception:
         logger.error(traceback.print_exc())
 

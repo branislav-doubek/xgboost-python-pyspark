@@ -79,7 +79,7 @@ WORKDIR /home
 RUN curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
 RUN python3.7 get-pip.py
 RUN python3.7 -m pip install --upgrade pip
-RUN pip install pandas===0.23.4 xgboost===0.82 numpy sklearn
+RUN pip install pandas===0.23.4 xgboost===0.82 numpy sklearn optuna
 
 CMD cd /home/xgboost-python-pyspark
 
