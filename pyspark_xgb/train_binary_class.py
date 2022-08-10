@@ -21,7 +21,7 @@ assert not os.environ.get(
 abspath = os.path.abspath(__file__)
 PARENT_PROJ_PATH = '/'.join(abspath.split(os.sep)[:-2])
 PYSPARK_PROJ_PATH = '/'.join(abspath.split(os.sep)[:-1])
-DATASET_PATH = PARENT_PROJ_PATH + '/dataset'
+DATASET_PATH = '/home/dataset'
 MODEL_PATH = PYSPARK_PROJ_PATH + '/binary_model'
 LOCAL_MODEL_PATH = PARENT_PROJ_PATH + '/python_xgb/binary_model'
 
