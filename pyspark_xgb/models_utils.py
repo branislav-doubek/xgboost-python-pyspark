@@ -51,7 +51,6 @@ class DevXGBoostModel:
             self,
             spark,
             hyperparams: DevXGBoostModelHyperparams,
-            model,
             feature_cols: List[str],
             label_col: str,
             actions: List[str]
