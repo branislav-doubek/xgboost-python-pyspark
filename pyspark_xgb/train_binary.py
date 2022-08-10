@@ -70,8 +70,6 @@ def main():
             params.min_child_weight = min_child_weight
             params.colsample_bytree = colsample_bytree
             model = DevXGBoostModel(spark, params, feature_cols, label_col, actions=[])
-            train = train
-            valid = valid
             score = model.cross_validate(train, valid)
             return score
     
