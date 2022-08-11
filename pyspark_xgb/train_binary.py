@@ -53,6 +53,13 @@ def main():
         feature_cols = [col for col in train.columns if col not in safe_cols]
         label_col = 'LABEL'
 
+        print('train')
+        print(train.groupby(label_col).count().show())
+        print('valid')
+        print(valid.groupby(label_col).count().show())
+        print('test')
+        print(test.groupby(label_col).count().show())
+        
         def objective(trial):
             max_depth = trial.suggest_int('max_depth', 5, 30)
             eta = trial.suggest_loguniform('eta', 0.001, 0.01)
