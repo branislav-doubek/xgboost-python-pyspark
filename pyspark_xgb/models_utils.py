@@ -121,28 +121,34 @@ class DevXGBoostModel:
 
 
     def train_model(self, train_ds, valid_ds=False):
+        print("initialize model")
         self.initialize_model()
-        if valid_ds:
+        try:
+            print('using valid dataset')
             eval_set = {'eval': valid_ds._jdf}
             scala_eval_set = self.spark._jvm.PythonUtils.toScalaMap(eval_set)
             self.model = self.model.setEvalSets(scala_eval_set)
             self.model = self.model.fit(train_ds._jdf)
-        else:
+        except:
+            print('non valid evaluation')
             self.model = self.model.fit(train_ds._jdf)
 
     def cross_validate(self, train_ds, valid_ds, multiclass=False) -> float:
         # Calculate weights
+        print("Calculate weights")
         self.calculate_weights(train_ds.select(self.label_col))
         train = self.weight_mapping(train_ds)
         valid = self.weight_mapping(valid_ds)
         # Create feature vectors
+        print("Create feature vectors")
         self.train_vector_assembler(train_ds)
         train = self.create_feature_vector(train)
         valid = self.create_feature_vector(valid)
         # Fit model
+        print('train model')
         self.model = self.train_model(train, valid)
         # Predict (transform)
-        predictions = self.model.transform(valid._jdf)
+        predictions = self.model.transform(train._jdf)
         predictions_labels = predictions.rdd.map(
             lambda x: (x['prediction'], x['label']))
         metrics = MulticlassMetrics(predictions_labels)
