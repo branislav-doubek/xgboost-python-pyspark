@@ -123,15 +123,15 @@ class DevXGBoostModel:
     def train_model(self, train_ds, valid_ds=False):
         print("initialize model")
         self.initialize_model()
-        try:
-            print('using valid dataset')
-            eval_set = {'eval': valid_ds._jdf}
-            scala_eval_set = self.spark._jvm.PythonUtils.toScalaMap(eval_set)
-            self.model = self.model.setEvalSets(scala_eval_set)
-            self.model = self.model.fit(train_ds._jdf)
-        except:
-            print('non valid evaluation')
-            self.model = self.model.fit(train_ds._jdf)
+        #try:
+        #    print('using valid dataset')
+        #    eval_set = {'eval': valid_ds._jdf}
+        ##    scala_eval_set = self.spark._jvm.PythonUtils.toScalaMap(eval_set)
+        #    self.model = self.model.setEvalSets(scala_eval_set)
+        #    self.model = self.model.fit(train_ds._jdf)
+        #except:
+        print('non valid evaluation')
+        self.model = self.model.fit(train_ds._jdf)
 
     def cross_validate(self, train_ds, valid_ds, multiclass=False) -> float:
         # Calculate weights
