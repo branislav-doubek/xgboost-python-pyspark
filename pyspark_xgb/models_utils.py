@@ -88,7 +88,7 @@ class DevXGBoostModel:
                              mapping_expr.getItem(f.col(self.label_col)))
 
     def create_feature_vector(self, df: DataFrame):
-        return self.vector_assembler.transform(df).select('features', self.label, 'weight')
+        return self.vector_assembler.transform(df).select('features', self.label_col, 'weight')
 
     def train_vector_assembler(self, df: DataFrame):
         self.vector_assembler = VectorAssembler().setInputCols(
