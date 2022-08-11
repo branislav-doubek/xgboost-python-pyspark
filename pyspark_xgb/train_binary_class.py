@@ -51,9 +51,15 @@ def main():
         test = spark.read.parquet(DATASET_PATH + '/test')
 
         # preprocess
-        LABEL = 'label'
+        LABEL = 'LABEL'
         FEATURES = 'features'
-        features = [c for c in train.columns if c != LABEL]
+
+        safe_cols = [
+            'ID_CUSTOMER',
+            'LABEL',
+            'CD_PERIOD']
+        features = [c for c in train.columns if c not in  safe_cols]
+
         assembler = VectorAssembler(inputCols=features, outputCol=FEATURES)
         train = assembler.transform(train).select(FEATURES, LABEL)
         test = assembler.transform(test).select(FEATURES, LABEL)

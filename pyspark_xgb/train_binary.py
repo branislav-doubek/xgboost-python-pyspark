@@ -47,11 +47,11 @@ def main():
 
         safe_cols = [
             'ID_CUSTOMER',
-            'label',
+            'LABEL',
             'CD_PERIOD']
 
         feature_cols = [col for col in train.columns if col not in safe_cols]
-        label_col = 'label'
+        label_col = 'LABEL'
 
         def objective(trial):
             max_depth = trial.suggest_int('max_depth', 5, 30)

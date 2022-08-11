@@ -70,7 +70,7 @@ class DevXGBoostModel:
         java_obj = "ml.dmlc.xgboost4j.scala.spark.XGBoostClassifier"
         self.model = JavaWrapper._new_java_obj(java_obj, scala_map)\
                                 .setFeaturesCol('features').setLabelCol(self.label_col)\
-                                .setWeightCol('weight')
+                                #.setWeightCol('weight')
 
     def calculate_weights(self, label_col):
         y_collect = label_col.groupBy(self.label_col).count().collect()
