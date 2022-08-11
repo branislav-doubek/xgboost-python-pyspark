@@ -66,7 +66,7 @@ def main():
 
         # set param map
         xgb_params = {
-            "eta": 0.1, "eval_metric": "logloss",
+            "eta": 0.1, "eval_metric": "aucpr",
             "gamma": 0, "max_depth": 5, "min_child_weight": 1.0,
             "objective": "binary:logistic", "seed": 0,
             # xgboost4j only

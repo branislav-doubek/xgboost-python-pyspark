@@ -26,7 +26,7 @@ class DevXGBoostModelHyperparams:
     num_class: int = 2
 
     # Booster Params
-    eval_metric: str = 'aucpr'
+    eval_metric: str = 'logloss'
     objective: str = 'binary:logistic'
     seed: int = 42
 
