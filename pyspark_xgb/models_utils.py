@@ -148,7 +148,11 @@ class DevXGBoostModel:
         print('train model')
         self.model = self.train_model(train, valid)
         # Predict (transform)
+        print('predicting')
         predictions = self.model.transform(train._jdf)
+        print(predictions.count())
+        print(type(predictions))
+        print(predictions)
         predictions_labels = predictions.rdd.map(
             lambda x: (x['prediction'], x['label']))
         metrics = MulticlassMetrics(predictions_labels)
