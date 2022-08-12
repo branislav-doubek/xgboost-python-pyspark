@@ -169,7 +169,7 @@ def optimize(train, valid, features_col, label_col, weight_col):
     study.optimize(objective, n_trials=5)
     
     best_params = study.best_params
-    model = train_model(train, best_params, feature_col, label_col, weight_col)
+    model = train_model(train, best_params, features_col, label_col, weight_col)
     preds = predict(model, valid)
     preds = preds.withColumn(label_col, F.col(label_col).cast(T.DoubleType()))
     score = calculate_statistics(preds)
