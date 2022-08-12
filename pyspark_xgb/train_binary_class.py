@@ -114,7 +114,7 @@ def calculate_statistics(predictions, multiclass=False):
     return score
 
 
-def cross_validate(train, valid, xgb_params, multiclass=False):
+def cross_validate(train, valid, xgb_params, spark, multiclass=False):
     # set param map
     scala_map = spark._jvm.PythonUtils.toScalaMap(xgb_params)
 
@@ -200,8 +200,8 @@ def main():
             "missing": np.nan,
         }
         scala_map = spark._jvm.PythonUtils.toScalaMap(xgb_params)
-        score = cross_validate(train, valid, xgb_params)
-        
+        score = cross_validate(train, valid, xgb_params, spark)
+
         # set evaluation set
         eval_set = {'eval': valid._jdf}
         scala_eval_set = spark._jvm.PythonUtils.toScalaMap(eval_set)
