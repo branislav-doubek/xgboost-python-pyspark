@@ -56,6 +56,7 @@ def weight_mapping(df: DataFrame, label, weights=False):
 
 
 def train_model(train, params, feature_col, label_col, weight_col):
+    spark = get_spark(app_name="pyspark-xgb")
     scala_map = spark._jvm.PythonUtils.toScalaMap(params)
     j = JavaWrapper._new_java_obj(
         "ml.dmlc.xgboost4j.scala.spark.XGBoostClassifier", scala_map) \
@@ -72,7 +73,8 @@ def save_model(model, path):
     jbooster = model.nativeBooster()
     jbooster.saveModel(path)
 
-def load_model(spark, path):
+def load_model(path):
+    spark = get_spark(app_name="pyspark-xgb")
     if os.path.exists(path):
         scala_xgb = spark.sparkContext._jvm.ml.dmlc.xgboost4j.scala.XGBoost
         jbooster = scala_xgb.loadModel(path)
@@ -114,8 +116,9 @@ def calculate_statistics(predictions, multiclass=False):
     return score
 
 
-def cross_validate(train, valid, xgb_params, spark, features_col, label_col, weight_col, multiclass=False):
+def cross_validate(train, valid, xgb_params, features_col, label_col, weight_col, multiclass=False):
     # set param map
+    spark = get_spark(app_name="pyspark-xgb")
     scala_map = spark._jvm.PythonUtils.toScalaMap(xgb_params)
 
     # set evaluation set
@@ -181,7 +184,7 @@ def main():
             "missing": np.nan,
         }
         scala_map = spark._jvm.PythonUtils.toScalaMap(xgb_params)
-        score = cross_validate(train, valid, xgb_params, spark, FEATURES, LABEL, WEIGHT)
+        score = cross_validate(train, valid, xgb_params, FEATURES, LABEL, WEIGHT)
 
         jmodel = train_model(train, xgb_params, FEATURES, LABEL, WEIGHT)
         # save model - using native booster for single node library to read
