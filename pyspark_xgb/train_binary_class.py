@@ -34,6 +34,21 @@ def udf_logloss(truth, pred, eps=1e-15):
         return -(truth * math.log(pred) + (1 - truth) * math.log(1 - pred))
     return F.udf(logloss_, FloatType())(truth, pred)
 
+def calculate_weights(label_col, label):
+    y_collect = label_col.groupBy(label).count().collect()
+    unique_y = [x[label] for x in y_collect]
+    total_y = sum([x['count'] for x in y_collect])
+    unique_y_count = len(y_collect)
+    bin_count = [x['count'] for x in y_collect]
+    weights = {i: ii for i, ii in zip(unique_y, total_y / (
+                unique_y_count * np.array(bin_count)))}
+    return weights
+
+def weight_mapping(df: DataFrame, label, weights=False):
+    if not weights:
+        weights = calculate_weights(df.select(label), label)
+    mapping_expr = f.create_map([f.lit(x) for x in chain(*weights.items())])
+    return df.withColumn('weight', mapping_expr.getItem(f.col(label))), weights
 
 def main():
 
@@ -53,6 +68,7 @@ def main():
         # preprocess
         LABEL = 'LABEL'
         FEATURES = 'features'
+        WEIGHT = 'weight'
 
         safe_cols = [
             'ID_CUSTOMER',
@@ -61,8 +77,11 @@ def main():
         features = [c for c in train.columns if c not in  safe_cols]
 
         assembler = VectorAssembler(inputCols=features, outputCol=FEATURES)
-        train = assembler.transform(train).select(FEATURES, LABEL)
-        valid = assembler.transform(valid).select(FEATURES, LABEL)
+        train, weights = weight_mapping(train_ds, label_col)
+        valid = weight_mapping(valid, label_col, weights)
+
+        train = assembler.transform(train).select(FEATURES, LABEL, WEIGHT)
+        valid = assembler.transform(valid).select(FEATURES, LABEL, WEIGHT)
         
         # set param map
         xgb_params = {
@@ -84,7 +103,7 @@ def main():
         logger.info('training')
         j = JavaWrapper._new_java_obj(
             "ml.dmlc.xgboost4j.scala.spark.XGBoostClassifier", scala_map) \
-            .setFeaturesCol(FEATURES).setLabelCol(LABEL) \
+            .setFeaturesCol(FEATURES).setLabelCol(LABEL).setWeightCol(WEIGHT) \
             .setEvalSets(scala_eval_set)
         jmodel = j.fit(train._jdf)
         print_summary(jmodel)
