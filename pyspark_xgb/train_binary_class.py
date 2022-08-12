@@ -118,7 +118,7 @@ def calculate_statistics(predictions, multiclass=False):
     return score
 
 
-def cross_validate(train, valid, xgb_params, features_col, label_col, weight_col, multiclass):
+def cross_validate(train, valid, xgb_params, features_col, label_col, weight_col, multiclass=False, summary=False):
     # set param map
     spark = get_spark(app_name="pyspark-xgb")
     scala_map = spark._jvm.PythonUtils.toScalaMap(xgb_params)
@@ -128,14 +128,16 @@ def cross_validate(train, valid, xgb_params, features_col, label_col, weight_col
     scala_eval_set = spark._jvm.PythonUtils.toScalaMap(eval_set)
 
     jmodel = train_model(train, xgb_params, features_col, label_col, weight_col)
-    print_summary(jmodel)
+    if summary:
+        print_summary(jmodel)
 
     # get validation metric
     preds = predict(jmodel, valid)
     preds = preds.withColumn(label_col, F.col(label_col).cast(T.DoubleType()))
-    calculate_statistics(preds)
+    score = calculate_statistics(preds, multiclass)
+    return score
 
-def optimize(train, valid, features_col, label_col, weight_col, multiclass=False):
+def optimize(train, valid, features_col, label_col, weight_col):
     def objective(trial):
         max_depth = trial.suggest_int('max_depth', 5, 30)
         eta = trial.suggest_loguniform('eta', 0.001, 0.01)
@@ -160,7 +162,7 @@ def optimize(train, valid, features_col, label_col, weight_col, multiclass=False
         xgb_params['subsample'] = subsample
         xgb_params['min_child_weight'] = min_child_weight
         xgb_params['colsample_bytree'] = colsample_bytree
-        score = cross_validate(train, valid, xgb_params, features_col, label_col, weight_col, multiclass)
+        score = cross_validate(train, valid, xgb_params, features_col, label_col, weight_col, summary=False)
         return score
 
     study = optuna.create_study(direction='maximize')
