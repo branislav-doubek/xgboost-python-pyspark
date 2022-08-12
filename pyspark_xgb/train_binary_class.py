@@ -89,10 +89,10 @@ def main():
         # set param map
         xgb_params = {
             "eta": 0.1, "eval_metric": "aucpr",
-            "gamma": 0, "max_depth": 5, "min_child_weight": 1.0,
+            "gamma": 1, "max_depth": 5, "min_child_weight": 1.0,
             "objective": "binary:logistic", "seed": 0,
             # xgboost4j only
-            "num_round": 100, "num_early_stopping_rounds": 10,
+            "num_round": 1000, "num_early_stopping_rounds": 10,
             "maximize_evaluation_metrics": False,   # minimize logloss
             "num_workers": 1, "use_external_memory": False,
             "missing": np.nan,
