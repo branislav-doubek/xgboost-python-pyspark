@@ -77,7 +77,7 @@ def main():
         features = [c for c in train.columns if c not in  safe_cols]
 
         assembler = VectorAssembler(inputCols=features, outputCol=FEATURES)
-        train, weights = weight_mapping(train_ds, label_col)
+        train, weights = weight_mapping(train, label_col)
         valid = weight_mapping(valid, label_col, weights)
 
         train = assembler.transform(train).select(FEATURES, LABEL, WEIGHT)
