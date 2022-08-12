@@ -55,7 +55,7 @@ def weight_mapping(df: DataFrame, label, weights=False):
     return df.withColumn('weight', mapping_expr.getItem(F.col(label))), weights
 
 
-def train_model(train, params):
+def train_model(train, feature_col, label_col, weight_col, params):
     scala_map = spark._jvm.PythonUtils.toScalaMap(params)
     j = JavaWrapper._new_java_obj(
         "ml.dmlc.xgboost4j.scala.spark.XGBoostClassifier", scala_map) \
@@ -134,25 +134,7 @@ def cross_validate(train, valid, xgb_params, spark, features_col, label_col, wei
     pred = DataFrame(preds, spark)
     pred = pred.withColumn(label_col, F.col(label_col).cast(T.DoubleType()))
     print(pred.show())
-    predictions_labels = pred.rdd.map(
-                lambda x: (x['prediction'], x[label_col]))
-    metrics = MulticlassMetrics(predictions_labels)
-    labels = pred.rdd.map(lambda lp: lp.LABEL).distinct().collect()
-    score = 0
-    for label in sorted(labels[1:]):
-        print(
-            'Class %s precision = %s' % (label, metrics.precision(float(label))))
-        print(
-            'Class %s recall = %s' % (label, metrics.recall(float(label))))
-        print('Class %s F1 Measure = %s' % (
-        label, metrics.fMeasure(label, beta=1.0)))
-        score += metrics.recall(float(label))
-
-    print('Recall')
-    print(score)
-    cm = metrics.confusionMatrix()
-    print('Confusion Matrix')
-    print(cm)
+    calculate_statistics(pred)
 
 
 def main():
@@ -202,42 +184,7 @@ def main():
         scala_map = spark._jvm.PythonUtils.toScalaMap(xgb_params)
         score = cross_validate(train, valid, xgb_params, spark, FEATURES, LABEL, WEIGHT)
 
-        # set evaluation set
-        eval_set = {'eval': valid._jdf}
-        scala_eval_set = spark._jvm.PythonUtils.toScalaMap(eval_set)
-
-        j = JavaWrapper._new_java_obj(
-            "ml.dmlc.xgboost4j.scala.spark.XGBoostClassifier", scala_map) \
-            .setFeaturesCol(FEATURES).setLabelCol(LABEL).setWeightCol(WEIGHT) \
-            .setEvalSets(scala_eval_set)
-        jmodel = j.fit(train._jdf)
-        print_summary(jmodel)
-
-        # get validation metric
-        preds = jmodel.transform(valid._jdf)
-        pred = DataFrame(preds, spark)
-        pred = pred.withColumn('LABEL', F.col('LABEL').cast(T.DoubleType()))
-        print(pred.show())
-        predictions_labels = pred.rdd.map(
-                    lambda x: (x['prediction'], x['LABEL']))
-        metrics = MulticlassMetrics(predictions_labels)
-        labels = pred.rdd.map(lambda lp: float(lp.LABEL)).distinct().collect()
-        score = 0
-        for label in sorted(labels[1:]):
-            print(
-                'Class %s precision = %s' % (label, metrics.precision(float(label))))
-            print(
-                'Class %s recall = %s' % (label, metrics.recall(float(label))))
-            print('Class %s F1 Measure = %s' % (
-            label, metrics.fMeasure(label, beta=1.0)))
-            score += metrics.recall(float(label))
-
-        print('Recall')
-        print(score)
-        cm = metrics.confusionMatrix()
-        print('Confusion Matrix')
-        print(cm)
-
+        jmodel = train_model(train, FEATURES, LABEL, WEIGHT)
         # save model - using native booster for single node library to read
         model_path = MODEL_PATH + '/model.bin'
         save_model(jmodel, model_path)
