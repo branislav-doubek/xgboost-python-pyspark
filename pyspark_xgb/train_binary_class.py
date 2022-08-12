@@ -118,8 +118,19 @@ def main():
         predictions_labels = pred.rdd.map(
                     lambda x: (x['prediction'], x['LABEL']))
         metrics = MulticlassMetrics(predictions_labels)
-        logger.info('[xgboost4j] valid logloss: {}'.format(slogloss))
-
+        labels = predictions.rdd.map(lambda lp: lp.label).distinct().collect()
+        score = 0
+        for label in sorted(labels[1:]):
+            logging.info(
+                'Class %s precision = %s' % (label, metrics.precision(label)))
+            logging.info(
+                'Class %s recall = %s' % (label, metrics.recall(label)))
+            logging.info('Class %s F1 Measure = %s' % (
+            label, metrics.fMeasure(label, beta=1.0)))
+            if multiclass:
+                score += metrics.fMeasure(label, beta=1.0)
+            else:
+                score += metrics.recall(label)
         # save model - using native booster for single node library to read
         model_path = MODEL_PATH + '/model.bin'
         logger.info('save model to {}'.format(model_path))
