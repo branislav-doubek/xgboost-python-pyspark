@@ -121,11 +121,11 @@ def main():
         labels = pred.rdd.map(lambda lp: lp.LABEL).distinct().collect()
         score = 0
         for label in sorted(labels[1:]):
-            logging.info(
+            print(
                 'Class %s precision = %s' % (label, metrics.precision(label)))
-            logging.info(
+            print(
                 'Class %s recall = %s' % (label, metrics.recall(label)))
-            logging.info('Class %s F1 Measure = %s' % (
+            print('Class %s F1 Measure = %s' % (
             label, metrics.fMeasure(label, beta=1.0)))
             if multiclass:
                 score += metrics.fMeasure(label, beta=1.0)
