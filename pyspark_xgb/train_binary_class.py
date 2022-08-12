@@ -4,6 +4,7 @@ import traceback
 import numpy as np
 
 import pyspark.sql.functions as F
+import pyspark.sql.types as T
 from pyspark.sql.types import FloatType
 from pyspark.sql import DataFrame
 from pyspark.ml.feature import VectorAssembler
@@ -114,6 +115,7 @@ def main():
         # get validation metric
         preds = jmodel.transform(valid._jdf)
         pred = DataFrame(preds, spark)
+        pred = pred.withColumn('LABEL', F.col('LABEL').cast(T.DoubleType()))
         print(pred.show())
         predictions_labels = pred.rdd.map(
                     lambda x: (x['prediction'], x['LABEL']))
