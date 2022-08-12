@@ -9,6 +9,8 @@ from pyspark.sql import DataFrame
 from pyspark.ml.feature import VectorAssembler
 from pyspark.ml.wrapper import JavaWrapper
 from itertools import chain
+from pyspark.ml.feature import VectorAssembler, QuantileDiscretizer
+from pyspark.mllib.evaluation import MulticlassMetrics, BinaryClassificationMetrics
 
 from spark import get_spark, get_logger
 from schema import get_btrain_schema
@@ -112,8 +114,9 @@ def main():
         # get validation metric
         preds = jmodel.transform(valid._jdf)
         pred = DataFrame(preds, spark)
-        slogloss = pred.withColumn('log_loss', udf_logloss(LABEL, 'probability')) \
-            .agg({"log_loss": "mean"}).collect()[0]['avg(log_loss)']
+        predictions_labels = predictions.rdd.map(
+                    lambda x: (x['prediction'], x['LABEL']))
+        metrics = MulticlassMetrics(predictions_labels)
         logger.info('[xgboost4j] valid logloss: {}'.format(slogloss))
 
         # save model - using native booster for single node library to read
