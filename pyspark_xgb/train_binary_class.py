@@ -114,7 +114,7 @@ def calculate_statistics(predictions, multiclass=False):
     return score
 
 
-def cross_validate(train, valid, xgb_params, spark, multiclass=False):
+def cross_validate(train, valid, xgb_params, spark, features_col, label_col, weight_col, multiclass=False):
     # set param map
     scala_map = spark._jvm.PythonUtils.toScalaMap(xgb_params)
 
@@ -132,12 +132,12 @@ def cross_validate(train, valid, xgb_params, spark, multiclass=False):
     # get validation metric
     preds = jmodel.transform(valid._jdf)
     pred = DataFrame(preds, spark)
-    pred = pred.withColumn('LABEL', F.col('LABEL').cast(T.DoubleType()))
+    pred = pred.withColumn(label_col, F.col(label_col).cast(T.DoubleType()))
     print(pred.show())
     predictions_labels = pred.rdd.map(
-                lambda x: (x['prediction'], x['LABEL']))
+                lambda x: (x['prediction'], x[label_col]))
     metrics = MulticlassMetrics(predictions_labels)
-    labels = pred.rdd.map(lambda lp: float(lp.LABEL)).distinct().collect()
+    labels = pred.rdd.map(lambda lp: lp.LABEL).distinct().collect()
     score = 0
     for label in sorted(labels[1:]):
         print(
@@ -200,7 +200,7 @@ def main():
             "missing": np.nan,
         }
         scala_map = spark._jvm.PythonUtils.toScalaMap(xgb_params)
-        score = cross_validate(train, valid, xgb_params, spark)
+        score = cross_validate(train, valid, xgb_params, spark, FEATURES, LABEL, WEIGHT)
 
         # set evaluation set
         eval_set = {'eval': valid._jdf}
