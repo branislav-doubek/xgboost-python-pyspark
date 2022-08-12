@@ -162,27 +162,16 @@ class DevXGBoostModel:
         score = 0
         for label in sorted(labels[1:]):
             print(
-                'Class %s precision = %s' % (label, metrics.precision(label)))
+                'Class %s precision = %s' % (float(label), metrics.precision(label)))
             print(
-                'Class %s recall = %s' % (label, metrics.recall(label)))
+                'Class %s recall = %s' % (float(label), metrics.recall(label)))
             print('Class %s F1 Measure = %s' % (
-            label, metrics.fMeasure(label, beta=1.0)))
-            if multiclass:
-                score += metrics.fMeasure(label, beta=1.0)
-            else:
-                score += metrics.recall(label)
+            float(label), metrics.fMeasure(label, beta=1.0)))
+            score += metrics.recall(label)
 
-        if multiclass:
-            score = score/(len(labels)-1)
-            print('Weighted F1-Score')
-        else:
-            print('Recall')
-
+        print('Recall')
         print(score)
-        logging.info(score)
-
         cm = metrics.confusionMatrix()
-        logging.info(cm)
         print('Confusion Matrix')
         print(cm)
 
