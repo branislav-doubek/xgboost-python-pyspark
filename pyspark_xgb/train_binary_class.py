@@ -118,7 +118,7 @@ def main():
         predictions_labels = pred.rdd.map(
                     lambda x: (x['prediction'], x['LABEL']))
         metrics = MulticlassMetrics(predictions_labels)
-        labels = pred.rdd.map(lambda lp: lp.LABEL).distinct().collect()
+        labels = pred.rdd.map(lambda lp: float(lp.LABEL)).distinct().collect()
         score = 0
         for label in sorted(labels[1:]):
             print(
