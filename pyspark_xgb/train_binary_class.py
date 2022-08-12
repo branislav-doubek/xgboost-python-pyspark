@@ -54,6 +54,110 @@ def weight_mapping(df: DataFrame, label, weights=False):
     mapping_expr = F.create_map([F.lit(x) for x in chain(*weights.items())])
     return df.withColumn('weight', mapping_expr.getItem(F.col(label))), weights
 
+
+def train_model(train, params):
+    scala_map = spark._jvm.PythonUtils.toScalaMap(params)
+    j = JavaWrapper._new_java_obj(
+        "ml.dmlc.xgboost4j.scala.spark.XGBoostClassifier", scala_map) \
+        .setFeaturesCol(FEATURES).setLabelCol(LABEL).setWeightCol(WEIGHT)
+    jmodel = j.fit(train._jdf)
+    return jmodel
+
+def predict(model, data):
+    preds = model.transform(data._jdf)
+    prediction = DataFrame(preds, spark)
+    return prediction
+
+def save_model(model, path):
+    logger.info('save model to {}'.format(path))
+    jbooster = model.nativeBooster()
+    jbooster.saveModel(path)
+
+def load_model(spark, path):
+    if os.path.exists(path):
+        logger.info('load model from {}'.format(path))
+        scala_xgb = spark.sparkContext._jvm.ml.dmlc.xgboost4j.scala.XGBoost
+        jbooster = scala_xgb.loadModel(path)
+        # uid, num_class, booster
+        xgb_cls_model = JavaWrapper._new_java_obj(
+            "ml.dmlc.xgboost4j.scala.spark.XGBoostClassificationModel",
+            "xgbc", 2, jbooster)
+        return xgb_cls_model
+    else:
+        print('model does not exist')
+
+def calculate_statistics(predictions, multiclass=False):
+    predictions_labels = predictions.rdd.map(
+                lambda x: (x['prediction'], x['LABEL']))
+    metrics = MulticlassMetrics(predictions_labels)
+    labels = pred.rdd.map(lambda lp: float(lp.LABEL)).distinct().collect()
+    score = 0
+    for label in sorted(labels[1:]):
+        print(
+            'Class %s precision = %s' % (label, metrics.precision(float(label))))
+        print(
+            'Class %s recall = %s' % (label, metrics.recall(float(label))))
+        print('Class %s F1 Measure = %s' % (
+        label, metrics.fMeasure(label, beta=1.0)))
+        if multiclass:
+            score += metrics.fMeasure(label, beta=1.0)
+        else:
+            score += metrics.recall(label)
+
+    if multiclass:
+        score = score/(len(labels)-1)
+        print('Weighted F1-Score')
+    else:
+        print('Recall')
+    print(score)
+    cm = metrics.confusionMatrix()
+    print('Confusion Matrix')
+    print(cm)
+    return score
+
+
+def cross_validate(train, valid, xgb_params, multiclass=False):
+    # set param map
+    scala_map = spark._jvm.PythonUtils.toScalaMap(xgb_params)
+
+    # set evaluation set
+    eval_set = {'eval': valid._jdf}
+    scala_eval_set = spark._jvm.PythonUtils.toScalaMap(eval_set)
+
+    logger.info('training')
+    j = JavaWrapper._new_java_obj(
+        "ml.dmlc.xgboost4j.scala.spark.XGBoostClassifier", scala_map) \
+        .setFeaturesCol(FEATURES).setLabelCol(LABEL).setWeightCol(WEIGHT) \
+        .setEvalSets(scala_eval_set)
+    jmodel = j.fit(train._jdf)
+    print_summary(jmodel)
+
+    # get validation metric
+    preds = jmodel.transform(valid._jdf)
+    pred = DataFrame(preds, spark)
+    pred = pred.withColumn('LABEL', F.col('LABEL').cast(T.DoubleType()))
+    print(pred.show())
+    predictions_labels = pred.rdd.map(
+                lambda x: (x['prediction'], x['LABEL']))
+    metrics = MulticlassMetrics(predictions_labels)
+    labels = pred.rdd.map(lambda lp: float(lp.LABEL)).distinct().collect()
+    score = 0
+    for label in sorted(labels[1:]):
+        print(
+            'Class %s precision = %s' % (label, metrics.precision(float(label))))
+        print(
+            'Class %s recall = %s' % (label, metrics.recall(float(label))))
+        print('Class %s F1 Measure = %s' % (
+        label, metrics.fMeasure(label, beta=1.0)))
+        score += metrics.recall(float(label))
+
+    print('Recall')
+    print(score)
+    cm = metrics.confusionMatrix()
+    print('Confusion Matrix')
+    print(cm)
+
+
 def main():
 
     try:
@@ -139,9 +243,7 @@ def main():
 
         # save model - using native booster for single node library to read
         model_path = MODEL_PATH + '/model.bin'
-        logger.info('save model to {}'.format(model_path))
-        jbooster = jmodel.nativeBooster()
-        jbooster.saveModel(model_path)
+        save_model(jmodel, model_path)
 
         # get feature score
         imp_type = "gain"
@@ -157,26 +259,12 @@ def main():
 
         # [Optional] load model training by xgboost, predict and get validation metric
         local_model_path = LOCAL_MODEL_PATH + '/model.bin'
-        if os.path.exists(local_model_path):
-            logger.info('load model from {}'.format(local_model_path))
-            scala_xgb = spark.sparkContext._jvm.ml.dmlc.xgboost4j.scala.XGBoost
-            jbooster = scala_xgb.loadModel(local_model_path)
-
-            # uid, num_class, booster
-            xgb_cls_model = JavaWrapper._new_java_obj(
-                "ml.dmlc.xgboost4j.scala.spark.XGBoostClassificationModel",
-                "xgbc", 2, jbooster)
-
-            jpred = xgb_cls_model.transform(test._jdf)
-            pred = DataFrame(jpred, spark)
-            slogloss = pred.withColumn('log_loss', udf_logloss(LABEL, 'probability')) \
-                .agg({"log_loss": "mean"}).collect()[0]['avg(log_loss)']
-            logger.info('[xgboost] valid logloss: {}'.format(slogloss))
-        else:
-            logger.info(
-                "local model is not exist, call python_xgb/train_binary.py to get the model "
-                "and compare logloss between xgboost and xgboost4j"
-            )
+        xgb_cls_model = load_model(local_model_path)
+        jpred = xgb_cls_model.transform(test._jdf)
+        pred = DataFrame(jpred, spark)
+        slogloss = pred.withColumn('log_loss', udf_logloss(LABEL, 'probability')) \
+            .agg({"log_loss": "mean"}).collect()[0]['avg(log_loss)']
+        logger.info('[xgboost] valid logloss: {}'.format(slogloss))
 
     except Exception:
         logger.error(traceback.print_exc())
