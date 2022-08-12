@@ -76,6 +76,7 @@ def save_model(model, path):
 
 def load_model(path):
     spark = get_spark(app_name="pyspark-xgb")
+    print(path)
     if os.path.exists(path):
         scala_xgb = spark.sparkContext._jvm.ml.dmlc.xgboost4j.scala.XGBoost
         jbooster = scala_xgb.loadModel(path)
