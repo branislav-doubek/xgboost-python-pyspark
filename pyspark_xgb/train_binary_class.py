@@ -126,8 +126,7 @@ def cross_validate(train, valid, xgb_params, features_col, label_col, weight_col
     eval_set = {'eval': valid._jdf}
     scala_eval_set = spark._jvm.PythonUtils.toScalaMap(eval_set)
 
-    j = train_model(train, xgb_params, features_col, label_col, weight_col)
-    jmodel = j.fit(train._jdf)
+    jmodel = train_model(train, xgb_params, features_col, label_col, weight_col)
     print_summary(jmodel)
 
     # get validation metric
