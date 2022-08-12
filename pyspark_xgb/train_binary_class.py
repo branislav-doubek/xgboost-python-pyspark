@@ -114,7 +114,8 @@ def main():
         # get validation metric
         preds = jmodel.transform(valid._jdf)
         pred = DataFrame(preds, spark)
-        predictions_labels = predictions.rdd.map(
+        print(pred.show())
+        predictions_labels = pred.rdd.map(
                     lambda x: (x['prediction'], x['LABEL']))
         metrics = MulticlassMetrics(predictions_labels)
         logger.info('[xgboost4j] valid logloss: {}'.format(slogloss))
