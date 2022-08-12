@@ -211,7 +211,7 @@ def main():
             "num_workers": 1, "use_external_memory": False,
             "missing": np.nan,
         }
-        score = cross_validate(train, valid, xgb_params, FEATURES, LABEL, WEIGHT)
+        score = cross_validate(train, valid, xgb_params, FEATURES, LABEL, WEIGHT, multiclass=False)
 
         jmodel = train_model(train, xgb_params, FEATURES, LABEL, WEIGHT)
         # save model - using native booster for single node library to read
