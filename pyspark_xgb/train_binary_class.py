@@ -124,7 +124,7 @@ def cross_validate(train, valid, xgb_params, spark, features_col, label_col, wei
 
     j = JavaWrapper._new_java_obj(
         "ml.dmlc.xgboost4j.scala.spark.XGBoostClassifier", scala_map) \
-        .setFeaturesCol(FEATURES).setLabelCol(LABEL).setWeightCol(WEIGHT) \
+        .setFeaturesCol(features_col).setLabelCol(label_col).setWeightCol(weight_col) \
         .setEvalSets(scala_eval_set)
     jmodel = j.fit(train._jdf)
     print_summary(jmodel)
