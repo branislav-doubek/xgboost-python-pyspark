@@ -129,10 +129,14 @@ def main():
                 'Class %s recall = %s' % (label, metrics.recall(float(label))))
             print('Class %s F1 Measure = %s' % (
             label, metrics.fMeasure(label, beta=1.0)))
-            if multiclass:
-                score += metrics.fMeasure(label, beta=1.0)
-            else:
-                score += metrics.recall(float(label))
+            score += metrics.recall(float(label))
+
+        print('Recall')
+        print(score)
+        cm = metrics.confusionMatrix()
+        print('Confusion Matrix')
+        print(cm)
+
         # save model - using native booster for single node library to read
         model_path = MODEL_PATH + '/model.bin'
         logger.info('save model to {}'.format(model_path))
