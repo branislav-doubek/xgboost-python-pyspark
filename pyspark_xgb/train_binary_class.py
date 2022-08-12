@@ -8,6 +8,7 @@ from pyspark.sql.types import FloatType
 from pyspark.sql import DataFrame
 from pyspark.ml.feature import VectorAssembler
 from pyspark.ml.wrapper import JavaWrapper
+from itertools import chain
 
 from spark import get_spark, get_logger
 from schema import get_btrain_schema
