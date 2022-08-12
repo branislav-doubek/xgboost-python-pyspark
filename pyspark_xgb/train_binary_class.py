@@ -47,8 +47,8 @@ def calculate_weights(label_col, label):
 def weight_mapping(df: DataFrame, label, weights=False):
     if not weights:
         weights = calculate_weights(df.select(label), label)
-    mapping_expr = f.create_map([f.lit(x) for x in chain(*weights.items())])
-    return df.withColumn('weight', mapping_expr.getItem(f.col(label))), weights
+    mapping_expr = F.create_map([F.lit(x) for x in chain(*weights.items())])
+    return df.withColumn('weight', mapping_expr.getItem(F.col(label))), weights
 
 def main():
 
