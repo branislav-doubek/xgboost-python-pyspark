@@ -149,7 +149,7 @@ def optimize(train, valid, features_col, label_col, weight_col, multiclass=False
             "gamma": 1, "max_depth": 5, "min_child_weight": 1.0,
             "objective": "binary:logistic", "seed": 0,
             # xgboost4j only
-            "num_round": 1000, "num_early_stopping_rounds": 100,
+            "num_round": 100, "num_early_stopping_rounds": 10,
             "maximize_evaluation_metrics": False,   # minimize logloss
             "num_workers": 1, "use_external_memory": False,
             "missing": np.nan,
@@ -166,6 +166,13 @@ def optimize(train, valid, features_col, label_col, weight_col, multiclass=False
     study = optuna.create_study(direction='maximize')
     study.optimize(objective, n_trials=5)
     
+    best_params = study.best_params
+    model = train_model(train, params, feature_col, label_col, weight_col)
+    preds = predict(model, valid)
+    preds = preds.withColumn(label_col, F.col(label_col).cast(T.DoubleType()))
+    score = calculate_statistics(preds)
+    print(f'Best params {best_params}')
+    print(f'Score {score}')
 
 def main():
 
@@ -211,6 +218,7 @@ def main():
             "num_workers": 1, "use_external_memory": False,
             "missing": np.nan,
         }
+        optimize(train, valid, FEATURES, LABEL, WEIGHT)
         score = cross_validate(train, valid, xgb_params, FEATURES, LABEL, WEIGHT, multiclass=False)
 
         jmodel = train_model(train, xgb_params, FEATURES, LABEL, WEIGHT)
