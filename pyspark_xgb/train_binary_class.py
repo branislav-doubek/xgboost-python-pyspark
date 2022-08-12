@@ -131,7 +131,7 @@ def cross_validate(train, valid, xgb_params, features_col, label_col, weight_col
 
     # get validation metric
     preds = predict(jmodel, valid)
-    pred = pred.withColumn(label_col, F.col(label_col).cast(T.DoubleType()))
+    preds = preds.withColumn(label_col, F.col(label_col).cast(T.DoubleType()))
     calculate_statistics(pred)
 
 def optimize(train, valid, features_col, label_col, weight_col, multiclass=False):
