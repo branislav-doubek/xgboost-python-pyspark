@@ -55,7 +55,7 @@ def weight_mapping(df: DataFrame, label, weights=False):
     return df.withColumn('weight', mapping_expr.getItem(F.col(label))), weights
 
 
-def train_model(train, feature_col, label_col, weight_col, params):
+def train_model(train, params, feature_col, label_col, weight_col):
     scala_map = spark._jvm.PythonUtils.toScalaMap(params)
     j = JavaWrapper._new_java_obj(
         "ml.dmlc.xgboost4j.scala.spark.XGBoostClassifier", scala_map) \
@@ -133,7 +133,6 @@ def cross_validate(train, valid, xgb_params, spark, features_col, label_col, wei
     preds = jmodel.transform(valid._jdf)
     pred = DataFrame(preds, spark)
     pred = pred.withColumn(label_col, F.col(label_col).cast(T.DoubleType()))
-    print(pred.show())
     calculate_statistics(pred)
 
 
@@ -184,7 +183,7 @@ def main():
         scala_map = spark._jvm.PythonUtils.toScalaMap(xgb_params)
         score = cross_validate(train, valid, xgb_params, spark, FEATURES, LABEL, WEIGHT)
 
-        jmodel = train_model(train, FEATURES, LABEL, WEIGHT)
+        jmodel = train_model(train, xgb_params, FEATURES, LABEL, WEIGHT)
         # save model - using native booster for single node library to read
         model_path = MODEL_PATH + '/model.bin'
         save_model(jmodel, model_path)
@@ -205,8 +204,7 @@ def main():
         # [Optional] load model training by xgboost, predict and get validation metric
         local_model_path = LOCAL_MODEL_PATH + '/model.bin'
         xgb_cls_model = load_model(local_model_path)
-        jpred = xgb_cls_model.transform(test._jdf)
-        pred = DataFrame(jpred, spark)
+        pred = predict(xgb_cls_model, valid)
         slogloss = pred.withColumn('log_loss', udf_logloss(LABEL, 'probability')) \
             .agg({"log_loss": "mean"}).collect()[0]['avg(log_loss)']
         print('[xgboost] valid logloss: {}'.format(slogloss))
