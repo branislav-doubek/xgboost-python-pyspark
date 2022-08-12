@@ -79,9 +79,7 @@ def main():
 
         assembler = VectorAssembler(inputCols=features, outputCol=FEATURES)
         train, weights = weight_mapping(train, LABEL)
-        valid = weight_mapping(valid, LABEL, weights)
-
-        print(valid.show())
+        valid = weight_mapping(valid, LABEL, weights)[0]
 
         train = assembler.transform(train).select(FEATURES, LABEL, WEIGHT)
         valid = assembler.transform(valid).select(FEATURES, LABEL, WEIGHT)
