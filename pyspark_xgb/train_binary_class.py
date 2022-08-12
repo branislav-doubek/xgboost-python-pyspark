@@ -122,15 +122,15 @@ def main():
         score = 0
         for label in sorted(labels[1:]):
             print(
-                'Class %s precision = %s' % (label, metrics.precision(label)))
+                'Class %s precision = %s' % (label, metrics.precision(float(label))))
             print(
-                'Class %s recall = %s' % (label, metrics.recall(label)))
+                'Class %s recall = %s' % (label, metrics.recall(float(label))))
             print('Class %s F1 Measure = %s' % (
             label, metrics.fMeasure(label, beta=1.0)))
             if multiclass:
                 score += metrics.fMeasure(label, beta=1.0)
             else:
-                score += metrics.recall(label)
+                score += metrics.recall(float(label))
         # save model - using native booster for single node library to read
         model_path = MODEL_PATH + '/model.bin'
         logger.info('save model to {}'.format(model_path))
