@@ -65,13 +65,6 @@ class DevXGBoostModel:
         self.vector_assembler = None
         self.spark = spark
 
-    def initialize_model(self):
-        scala_map = self.spark._jvm.PythonUtils.toScalaMap(self.parameters)
-        java_obj = "ml.dmlc.xgboost4j.scala.spark.XGBoostClassifier"
-        self.model = JavaWrapper._new_java_obj(java_obj, scala_map)\
-                                .setFeaturesCol('features').setLabelCol(self.label_col)\
-                                #.setWeightCol('weight')
-
     def calculate_weights(self, label_col):
         y_collect = label_col.groupBy(self.label_col).count().collect()
         unique_y = [x[self.label_col] for x in y_collect]
@@ -120,7 +113,14 @@ class DevXGBoostModel:
             self.model = xgb_cls_model
 
 
-    def train_model(self, train_ds, valid_ds=False):
+     def initialize_model(self):
+        scala_map = self.spark._jvm.PythonUtils.toScalaMap(self.parameters)
+        java_obj = "ml.dmlc.xgboost4j.scala.spark.XGBoostClassifier"
+        self.model = JavaWrapper._new_java_obj(java_obj, scala_map)\
+                                .setFeaturesCol('features').setLabelCol(self.label_col)\
+                                #.setWeightCol('weight')
+
+   def train_model(self, train, valid_ds=False):
         print("initialize model")
         self.initialize_model()
         #try:
@@ -131,7 +131,7 @@ class DevXGBoostModel:
         #    self.model = self.model.fit(train_ds._jdf)
         #except:
         print('non valid evaluation')
-        self.model = self.model.fit(train_ds._jdf)
+        self.model = self.model.fit(train._jdf)
 
     def cross_validate(self, train_ds, valid_ds, multiclass=False) -> float:
         # Calculate weights

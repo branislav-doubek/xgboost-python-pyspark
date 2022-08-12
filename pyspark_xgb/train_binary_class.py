@@ -62,8 +62,8 @@ def main():
 
         assembler = VectorAssembler(inputCols=features, outputCol=FEATURES)
         train = assembler.transform(train).select(FEATURES, LABEL)
-        test = assembler.transform(test).select(FEATURES, LABEL)
-
+        valid = assembler.transform(valid).select(FEATURES, LABEL)
+        
         # set param map
         xgb_params = {
             "eta": 0.1, "eval_metric": "auc",
@@ -78,7 +78,7 @@ def main():
         scala_map = spark._jvm.PythonUtils.toScalaMap(xgb_params)
 
         # set evaluation set
-        eval_set = {'eval': test._jdf}
+        eval_set = {'eval': valid._jdf}
         scala_eval_set = spark._jvm.PythonUtils.toScalaMap(eval_set)
 
         logger.info('training')
@@ -90,7 +90,7 @@ def main():
         print_summary(jmodel)
 
         # get validation metric
-        preds = jmodel.transform(test._jdf)
+        preds = jmodel.transform(valid._jdf)
         pred = DataFrame(preds, spark)
         slogloss = pred.withColumn('log_loss', udf_logloss(LABEL, 'probability')) \
             .agg({"log_loss": "mean"}).collect()[0]['avg(log_loss)']
