@@ -60,11 +60,12 @@ def train_model(train, params, feature_col, label_col, weight_col):
     scala_map = spark._jvm.PythonUtils.toScalaMap(params)
     j = JavaWrapper._new_java_obj(
         "ml.dmlc.xgboost4j.scala.spark.XGBoostClassifier", scala_map) \
-        .setFeaturesCol(FEATURES).setLabelCol(LABEL).setWeightCol(WEIGHT)
+        .setFeaturesCol(feature_col).setLabelCol(label_col).setWeightCol(weight_col)
     jmodel = j.fit(train._jdf)
     return jmodel
 
 def predict(model, data):
+    spark = get_spark(app_name="pyspark-xgb")
     preds = model.transform(data._jdf)
     prediction = DataFrame(preds, spark)
     return prediction
@@ -116,7 +117,7 @@ def calculate_statistics(predictions, multiclass=False):
     return score
 
 
-def cross_validate(train, valid, xgb_params, features_col, label_col, weight_col, multiclass=False):
+def cross_validate(train, valid, xgb_params, features_col, label_col, weight_col, multiclass):
     # set param map
     spark = get_spark(app_name="pyspark-xgb")
     scala_map = spark._jvm.PythonUtils.toScalaMap(xgb_params)
@@ -125,19 +126,46 @@ def cross_validate(train, valid, xgb_params, features_col, label_col, weight_col
     eval_set = {'eval': valid._jdf}
     scala_eval_set = spark._jvm.PythonUtils.toScalaMap(eval_set)
 
-    j = JavaWrapper._new_java_obj(
-        "ml.dmlc.xgboost4j.scala.spark.XGBoostClassifier", scala_map) \
-        .setFeaturesCol(features_col).setLabelCol(label_col).setWeightCol(weight_col) \
-        .setEvalSets(scala_eval_set)
+    j = train_model(train, xgb_params, features_col, label_col, weight_col)
     jmodel = j.fit(train._jdf)
     print_summary(jmodel)
 
     # get validation metric
-    preds = jmodel.transform(valid._jdf)
-    pred = DataFrame(preds, spark)
+    preds = predict(jmodel, valid)
     pred = pred.withColumn(label_col, F.col(label_col).cast(T.DoubleType()))
     calculate_statistics(pred)
 
+def optimize(train, valid, features_col, label_col, weight_col, multiclass=False):
+    def objective(trial):
+        max_depth = trial.suggest_int('max_depth', 5, 30)
+        eta = trial.suggest_loguniform('eta', 0.001, 0.01)
+        gamma = trial.suggest_float('gamma', 1, 30)
+        subsample = trial.suggest_float('subsample', 0.01, 0.6)
+        min_child_weight = trial.suggest_float('min_child_weight', 1, 50)
+        colsample_bytree = trial.suggest_float('colsample_bytree', 0.3, 1)
+
+        xgb_params = {
+            "eta": 0.1, "eval_metric": "aucpr",
+            "gamma": 1, "max_depth": 5, "min_child_weight": 1.0,
+            "objective": "binary:logistic", "seed": 0,
+            # xgboost4j only
+            "num_round": 1000, "num_early_stopping_rounds": 100,
+            "maximize_evaluation_metrics": False,   # minimize logloss
+            "num_workers": 1, "use_external_memory": False,
+            "missing": np.nan,
+        }
+        xgb_params['max_depth'] = max_depth
+        xgb_params['eta'] = eta
+        xgb_params['gamma'] = gamma
+        xgb_params['subsample'] = subsample
+        xgb_params['min_child_weight'] = min_child_weight
+        xgb_params['colsample_bytree'] = colsample_bytree
+        score = cross_validate(train, valid, xgb_params, features_col, label_col, weight_col, multiclass)
+        return score
+
+    study = optuna.create_study(direction='maximize')
+    study.optimize(objective, n_trials=5)
+    
 
 def main():
 
@@ -178,12 +206,11 @@ def main():
             "gamma": 1, "max_depth": 5, "min_child_weight": 1.0,
             "objective": "binary:logistic", "seed": 0,
             # xgboost4j only
-            "num_round": 1000, "num_early_stopping_rounds": 10,
+            "num_round": 1000, "num_early_stopping_rounds": 100,
             "maximize_evaluation_metrics": False,   # minimize logloss
             "num_workers": 1, "use_external_memory": False,
             "missing": np.nan,
         }
-        scala_map = spark._jvm.PythonUtils.toScalaMap(xgb_params)
         score = cross_validate(train, valid, xgb_params, FEATURES, LABEL, WEIGHT)
 
         jmodel = train_model(train, xgb_params, FEATURES, LABEL, WEIGHT)
