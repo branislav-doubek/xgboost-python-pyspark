@@ -69,13 +69,11 @@ def predict(model, data):
     return prediction
 
 def save_model(model, path):
-    logger.info('save model to {}'.format(path))
     jbooster = model.nativeBooster()
     jbooster.saveModel(path)
 
 def load_model(spark, path):
     if os.path.exists(path):
-        logger.info('load model from {}'.format(path))
         scala_xgb = spark.sparkContext._jvm.ml.dmlc.xgboost4j.scala.XGBoost
         jbooster = scala_xgb.loadModel(path)
         # uid, num_class, booster
@@ -124,7 +122,6 @@ def cross_validate(train, valid, xgb_params, multiclass=False):
     eval_set = {'eval': valid._jdf}
     scala_eval_set = spark._jvm.PythonUtils.toScalaMap(eval_set)
 
-    logger.info('training')
     j = JavaWrapper._new_java_obj(
         "ml.dmlc.xgboost4j.scala.spark.XGBoostClassifier", scala_map) \
         .setFeaturesCol(FEATURES).setLabelCol(LABEL).setWeightCol(WEIGHT) \
@@ -203,12 +200,12 @@ def main():
             "missing": np.nan,
         }
         scala_map = spark._jvm.PythonUtils.toScalaMap(xgb_params)
-
+        score = cross_validate(train, valid, xgb_params)
+        
         # set evaluation set
         eval_set = {'eval': valid._jdf}
         scala_eval_set = spark._jvm.PythonUtils.toScalaMap(eval_set)
 
-        logger.info('training')
         j = JavaWrapper._new_java_obj(
             "ml.dmlc.xgboost4j.scala.spark.XGBoostClassifier", scala_map) \
             .setFeaturesCol(FEATURES).setLabelCol(LABEL).setWeightCol(WEIGHT) \
@@ -246,7 +243,7 @@ def main():
         save_model(jmodel, model_path)
 
         # get feature score
-        imp_type = "gain"
+        """imp_type = "gain"
         feature_map_path = MODEL_PATH + '/feature.map'
         create_feature_map(feature_map_path, features)
         jfeatureMap = jbooster.getScore(feature_map_path, imp_type)
@@ -256,6 +253,7 @@ def main():
                 f_imp[feature] = jfeatureMap.get(feature).get()
         feature_imp_path = MODEL_PATH + '/feature.imp'
         create_feature_imp(feature_imp_path, f_imp)
+        """
 
         # [Optional] load model training by xgboost, predict and get validation metric
         local_model_path = LOCAL_MODEL_PATH + '/model.bin'
@@ -264,10 +262,10 @@ def main():
         pred = DataFrame(jpred, spark)
         slogloss = pred.withColumn('log_loss', udf_logloss(LABEL, 'probability')) \
             .agg({"log_loss": "mean"}).collect()[0]['avg(log_loss)']
-        logger.info('[xgboost] valid logloss: {}'.format(slogloss))
+        print('[xgboost] valid logloss: {}'.format(slogloss))
 
     except Exception:
-        logger.error(traceback.print_exc())
+        print(traceback.print_exc())
 
     finally:
         # stop spark
