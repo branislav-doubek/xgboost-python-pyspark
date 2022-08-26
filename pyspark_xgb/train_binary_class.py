@@ -15,7 +15,7 @@ from pyspark.mllib.evaluation import MulticlassMetrics, BinaryClassificationMetr
 import optuna
 from spark import get_spark, get_logger
 from schema import get_btrain_schema
-from utils import create_feature_map, create_feature_imp, print_summary
+from utils import create_feature_map, create_feature_imp, print_summary, load_config
 
 # assert len(os.environ.get('JAVA_HOME')) != 0, 'JAVA_HOME not set'
 assert len(os.environ.get('SPARK_HOME')) != 0, 'SPARK_HOME not set'
@@ -26,6 +26,7 @@ abspath = os.path.abspath(__file__)
 PARENT_PROJ_PATH = '/'.join(abspath.split(os.sep)[:-2])
 PYSPARK_PROJ_PATH = '/'.join(abspath.split(os.sep)[:-1])
 DATASET_PATH = '/home/dataset'
+CONFIG_PATH = '/home/config.yml'
 MODEL_PATH = PYSPARK_PROJ_PATH + '/binary_model'
 LOCAL_MODEL_PATH = PARENT_PROJ_PATH + '/pyspark_xgb/binary_model'
 
@@ -179,7 +180,7 @@ def optimize(train, valid, features_col, label_col, weight_col):
 def main():
 
     try:
-
+        config = load_config(CONFIG_PATH)
         # init spark
         spark = get_spark(app_name="pyspark-xgb")
 
@@ -205,7 +206,7 @@ def main():
         print(test.groupby('LABEL').count().show())
         print(train.groupby('LABEL').count().show())
         print(valid.groupby('LABEL').count().show())
-        
+
         assembler = VectorAssembler(inputCols=features, outputCol=FEATURES)
         train, weights = weight_mapping(train, LABEL)
         valid = weight_mapping(valid, LABEL, weights)[0]
@@ -224,8 +225,8 @@ def main():
             "num_workers": 1, "use_external_memory": False,
             "missing": np.nan,
         }
-        optimize(train, valid, FEATURES, LABEL, WEIGHT)
-        score = cross_validate(train, valid, xgb_params, FEATURES, LABEL, WEIGHT, multiclass=False)
+        #optimize(train, valid, FEATURES, LABEL, WEIGHT)
+        #score = cross_validate(train, valid, xgb_params, FEATURES, LABEL, WEIGHT, multiclass=False)
 
         jmodel = train_model(train, xgb_params, FEATURES, LABEL, WEIGHT)
         # save model - using native booster for single node library to read

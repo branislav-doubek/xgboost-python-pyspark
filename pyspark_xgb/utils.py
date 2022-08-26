@@ -1,4 +1,5 @@
 from spark import get_spark, get_logger
+import yaml
 
 
 def create_feature_map(fname, features):
@@ -56,3 +57,7 @@ def print_summary(jmodel):
         logger.info(printString)
 
 
+def load_config(path):
+    with open(path, 'r') as stream:
+        data_loaded = yaml.safe_load(stream)
+    return data_loaded
