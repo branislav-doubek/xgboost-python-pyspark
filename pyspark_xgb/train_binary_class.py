@@ -72,6 +72,7 @@ def predict(model, data):
     return prediction
 
 def save_model(model, path):
+    print(path)
     jbooster = model.nativeBooster()
     jbooster.saveModel(path)
 
