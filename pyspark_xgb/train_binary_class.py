@@ -27,7 +27,7 @@ PARENT_PROJ_PATH = '/'.join(abspath.split(os.sep)[:-2])
 PYSPARK_PROJ_PATH = '/'.join(abspath.split(os.sep)[:-1])
 DATASET_PATH = '/home/dataset'
 CONFIG_PATH = '/home/config.yml'
-MODEL_PATH = PYSPARK_PROJ_PATH + '/binary_model'
+MODEL_PATH = DATASET_PATH
 LOCAL_MODEL_PATH = PARENT_PROJ_PATH + '/pyspark_xgb/binary_model'
 
 
