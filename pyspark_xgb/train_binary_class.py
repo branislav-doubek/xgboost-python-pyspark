@@ -27,8 +27,8 @@ PARENT_PROJ_PATH = '/'.join(abspath.split(os.sep)[:-2])
 PYSPARK_PROJ_PATH = '/'.join(abspath.split(os.sep)[:-1])
 DATASET_PATH = '/home/dataset'
 CONFIG_PATH = '/home/config.yml'
-MODEL_PATH = DATASET_PATH
-LOCAL_MODEL_PATH = PARENT_PROJ_PATH + '/pyspark_xgb/binary_model'
+MODEL_PATH = '/output'
+LOCAL_MODEL_PATH = MODEL_PATH
 
 
 def udf_logloss(truth, pred, eps=1e-15):
@@ -235,7 +235,7 @@ def main():
         save_model(jmodel, model_path)
 
         # get feature score
-        """imp_type = "gain"
+        imp_type = "gain"
         feature_map_path = MODEL_PATH + '/feature.map'
         create_feature_map(feature_map_path, features)
         jfeatureMap = jbooster.getScore(feature_map_path, imp_type)
@@ -245,7 +245,6 @@ def main():
                 f_imp[feature] = jfeatureMap.get(feature).get()
         feature_imp_path = MODEL_PATH + '/feature.imp'
         create_feature_imp(feature_imp_path, f_imp)
-        """
 
         # [Optional] load model training by xgboost, predict and get validation metric
         local_model_path = LOCAL_MODEL_PATH + '/model.bin'
@@ -265,3 +264,6 @@ def main():
 
 if __name__ == '__main__':
     main()
+
+
+

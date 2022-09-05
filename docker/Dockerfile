@@ -82,7 +82,7 @@ RUN python3.7 -m pip install --upgrade pip
 RUN pip install pandas===0.23.4 xgboost===0.82 numpy sklearn optuna pyyaml
 
 CMD cd /home/xgboost-python-pyspark
-RUN ./xgboost-python-pyspark/pyspark_xgb/start.sh train_binary_class.py
+#RUN ./xgboost-python-pyspark/pyspark_xgb/start.sh train_binary_class.py
 
 #docker build -t doubekspark:latest . --no-cache
 #docker run -i -t doubekspark:latest /bin/bash
