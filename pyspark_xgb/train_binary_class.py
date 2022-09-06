@@ -238,7 +238,7 @@ def main():
         imp_type = "gain"
         feature_map_path = MODEL_PATH + '/feature.map'
         create_feature_map(feature_map_path, features)
-        jfeatureMap = jbooster.getScore(feature_map_path, imp_type)
+        jfeatureMap = jmodel.nativeBooster().getScore(feature_map_path, imp_type)
         f_imp = dict()
         for feature in features:
             if not jfeatureMap.get(feature).isEmpty():
