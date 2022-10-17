@@ -204,10 +204,6 @@ def main():
             'CD_PERIOD']
         features = [c for c in train.columns if c not in  safe_cols]
 
-        print(test.groupby('LABEL').count().show())
-        print(train.groupby('LABEL').count().show())
-        print(valid.groupby('LABEL').count().show())
-
         assembler = VectorAssembler(inputCols=features, outputCol=FEATURES)
         train, weights = weight_mapping(train, LABEL)
         valid = weight_mapping(valid, LABEL, weights)[0]

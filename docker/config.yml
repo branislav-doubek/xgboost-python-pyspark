@@ -1,0 +1,90 @@
+labels:
+    sql_path: 'src/o2sk_utils/labels/sql/labels_daily.sql'
+    labels_path: 'C:\\Users\\doube\\o2sk\\o2sk-utils\\data\\labels\\'
+features:
+    sql_path: 'src/o2sk_utils/features/sql/subscriber_behaviour.sql'
+    training:
+      features_path: 'C:\\Users\\doube\\o2sk\\o2sk-utils\\data\\features\\'
+    scoring:
+      features_path: '/tmp/x0659133/nbo-engine/data/features/subscriber_behaviour/'
+preprocessing:
+    pipeline:
+      categ_pipe:
+        basic:
+          ['Inputter:missing']
+        advanced:
+          ['One_hot_encoder:10']
+      int_pipe:
+        basic:
+          ['Inputter:missing']
+        stats:
+          ['Truncate_99']
+      decimal_pipe:
+        basic:
+          ['Inputter:missing']
+        stats:
+          ['Truncate_99', 'LogScaler']
+      flag_pipe: 
+        basic:
+          ['Inputter:-1']
+      float_pipe: 
+        basic:
+          ['Inputter:missing']
+        stats:
+          ['Truncate_99']
+    training:
+      features_path: 'C:\\Users\\doube\\o2sk\\o2sk-utils\\data\\features\\'
+      labels_path: 'C:\\Users\\doube\\o2sk\\o2sk-utils\\data\\labels\\'
+      stats_path: 'C:\\Users\\doube\\o2sk\\stats.json'
+      split_col: 'ID_COL_MONTH'
+      train_path: 'C:\\Users\\doube\\o2sk\\o2sk-utils\\train'
+      valid_path: 'C:\\Users\\doube\\o2sk\\o2sk-utils\\valid'
+      test_path: 'C:\\Users\\doube\\o2sk\\o2sk-utils\\test'
+      shift_join: -1
+      test_months: 0
+    scoring:
+      features_path: 'C:\\Users\\doube\\o2sk\\o2sk-utils\\data\\features\\'
+      stats_path: 'C:\\Users\\doube\\o2sk\\stats.json'
+      scoring_output_path: 'C:\\Users\\doube\\o2sk\\o2sk-utils\\scoring'
+modeling:
+    binary:
+      eval_metric: 'aucpr'
+      objective: 'binary:logistic'
+      scale_pos_weight: '400'
+      max_depth: [5, 30]
+      eta: [0.001, 0.01]
+      subsample: [0.01, 0.6]
+      gamma: [1, 30]
+      min_child_weight: [1, 50]
+      colsample_bytree: [0.3, 1]
+      config_path_docker: '/home/frovis/docker_test/xgboost-python-pyspark/docker/config_run.yaml'
+      data_path: '/home/frovis/docker_test/xgboost-python-pyspark/docker/data/'
+      log_path: '/home/frovis/docker_test/xgboost-python-pyspark/docker/binary_training.log'
+      params_result_path: 'src/o2sk_utils/models/logs/binary_results.csv'
+      best_params_path: 'src/o2sk_utils/models/best_params/binary.yml'
+      config_path: '/home/frovis/docker_test/xgboost-python-pyspark/docker/config_tmp.yaml'
+    multiclass:
+      eval_metric: 'mlogloss'
+      objective: 'multi:softprob'
+      max_depth: [5, 30]
+      eta: [0.001, 0.01]
+      subsample: [0.01, 0.6]
+      gamma: [1, 30]
+      min_child_weight: [1, 50]
+      colsample_bytree: [0.3, 1]
+      data_path: '/home/frovis/docker_test/xgboost-python-pyspark/docker/data/'
+      log_path: '/home/frovis/docker_test/xgboost-python-pyspark/docker/binary_multiclass.log'
+      params_result_path: 'src/o2sk_utils/models/logs/binary_results.csv'
+      best_params_path: 'src/o2sk_utils/models/best_params/multiclass.yml'
+      config_path: '/home/frovis/docker_test/xgboost-python-pyspark/docker/config_tmp.yaml'
+scoring:
+    sparkxgb_path: '/home/o2spark/drivers/sparkxgb-0.72.zip'
+    features_path: '/tmp/x0659133/nbo-engine/data/features/subscriber_behaviour/'
+    stats_path: 'parameters/3_month_stats.json'
+    scoring_output_path: '/tmp/x0659133/nbo-engine/data/preprocessing/subsc_5cls_3m_scoring_v2/'
+auth_cfg
+
+
+docker run -it -v /home/frovis/docker_test/xgboost-python-pyspark/docker/data:/home/dataset/ -v /home/frovis/o2sk/xgboost-python-pyspark/config.yml:/home/config.yml sparkxgb:latest /bin/bash
+
+: '/home/o2spark/config.ini'
