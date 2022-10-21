@@ -12,7 +12,7 @@ from pyspark.sql import types as T
 from pyspark.mllib.evaluation import MulticlassMetrics
 from pyspark.ml.wrapper import JavaWrapper
 import optuna
-from utils import print_summary, get_spark
+from spark import get_spark
 import os
 
 def create_feature_map(fname, features):
