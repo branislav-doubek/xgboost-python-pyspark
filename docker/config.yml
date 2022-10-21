@@ -47,44 +47,26 @@ preprocessing:
       stats_path: 'C:\\Users\\doube\\o2sk\\stats.json'
       scoring_output_path: 'C:\\Users\\doube\\o2sk\\o2sk-utils\\scoring'
 modeling:
-    binary:
-      eval_metric: 'aucpr'
-      objective: 'binary:logistic'
-      scale_pos_weight: '400'
-      max_depth: [5, 30]
-      eta: [0.001, 0.01]
-      subsample: [0.01, 0.6]
-      gamma: [1, 30]
-      min_child_weight: [1, 50]
-      colsample_bytree: [0.3, 1]
-      config_path_docker: '/home/frovis/docker_test/xgboost-python-pyspark/docker/config_run.yaml'
-      data_path: '/home/frovis/docker_test/xgboost-python-pyspark/docker/data/'
-      log_path: '/home/frovis/docker_test/xgboost-python-pyspark/docker/binary_training.log'
-      params_result_path: 'src/o2sk_utils/models/logs/binary_results.csv'
-      best_params_path: 'src/o2sk_utils/models/best_params/binary.yml'
-      config_path: '/home/frovis/docker_test/xgboost-python-pyspark/docker/config_tmp.yaml'
-    multiclass:
-      eval_metric: 'mlogloss'
-      objective: 'multi:softprob'
-      max_depth: [5, 30]
-      eta: [0.001, 0.01]
-      subsample: [0.01, 0.6]
-      gamma: [1, 30]
-      min_child_weight: [1, 50]
-      colsample_bytree: [0.3, 1]
-      data_path: '/home/frovis/docker_test/xgboost-python-pyspark/docker/data/'
-      log_path: '/home/frovis/docker_test/xgboost-python-pyspark/docker/binary_multiclass.log'
-      params_result_path: 'src/o2sk_utils/models/logs/binary_results.csv'
-      best_params_path: 'src/o2sk_utils/models/best_params/multiclass.yml'
-      config_path: '/home/frovis/docker_test/xgboost-python-pyspark/docker/config_tmp.yaml'
+    mode: 'hyperopt' # runs hyperparameter optimization. If cv it takes the best_params from best_params path
+    eval_metric: 'aucpr' # mlogloss for multiclass
+    objective: 'binary:logistic' # multi:softprob for multiclass
+    scale_pos_weight: '400'
+    max_depth: [5, 30]
+    eta: [0.001, 0.01]  
+    subsample: [0.01, 0.6]
+    gamma: [1, 30]
+    min_child_weight: [1, 50]
+    colsample_bytree: [0.3, 1]
+    config_path: /home/frovis/o2_sk/xgboost-python-pyspark/docker/config.yml
+    docker_config_path: /home/frovis/o2_sk/xgboost-python-pyspark/docker/config_tmp.yml
+    data_path: /home/frovis/o2_sk/xgboost-python-pyspark/docker/data/
+    log_path: /home/frovis/o2_sk/xgboost-python-pyspark/docker/experiment/binary_training.log
+    params_result_path: /home/frovis/o2_sk/xgboost-python-pyspark/docker/experiment/binary_results.csv
+    best_params_path: /home/frovis/o2_sk/xgboost-python-pyspark/docker/experiment/binary.yml
+    model_path: /home/frovis/o2_sk/xgboost-python-pyspark/docker/experiment/
 scoring:
-    sparkxgb_path: '/home/o2spark/drivers/sparkxgb-0.72.zip'
-    features_path: '/tmp/x0659133/nbo-engine/data/features/subscriber_behaviour/'
-    stats_path: 'parameters/3_month_stats.json'
-    scoring_output_path: '/tmp/x0659133/nbo-engine/data/preprocessing/subsc_5cls_3m_scoring_v2/'
-auth_cfg
+    model_path: '/home/frovis/o2_sk/xgboost-python-pyspark/docker/experiment/model.bin'
+    features_path: '/home/frovis/o2_sk/xgboost-python-pyspark/docker/data/'
+    scoring_output_path: '/home/frovis/o2_sk/xgboost-python-pyspark/docker/experiment/'
 
-
-docker run -it -v /home/frovis/docker_test/xgboost-python-pyspark/docker/data:/home/dataset/ -v /home/frovis/o2sk/xgboost-python-pyspark/config.yml:/home/config.yml sparkxgb:latest /bin/bash
-
-: '/home/o2spark/config.ini'
+auth_cfg: '/home/o2spark/config.ini'

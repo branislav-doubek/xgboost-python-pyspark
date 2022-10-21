@@ -1,0 +1,29 @@
+best_params_path: /home/frovis/o2_sk/xgboost-python-pyspark/docker/experiment/binary.yml
+colsample_bytree:
+- 0.3
+- 1
+config_path: /home/frovis/o2_sk/xgboost-python-pyspark/docker/config.yml
+data_path: /home/frovis/o2_sk/xgboost-python-pyspark/docker/data/
+docker_config_path: /home/frovis/o2_sk/xgboost-python-pyspark/docker/config_tmp.yml
+eta:
+- 0.001
+- 0.01
+eval_metric: aucpr
+gamma:
+- 1
+- 30
+log_path: /home/frovis/o2_sk/xgboost-python-pyspark/docker/experiment/binary_training.log
+max_depth:
+- 5
+- 30
+min_child_weight:
+- 1
+- 50
+mode: hyperopt
+model_path: /home/frovis/o2_sk/xgboost-python-pyspark/docker/experiment/
+objective: binary:logistic
+params_result_path: /home/frovis/o2_sk/xgboost-python-pyspark/docker/experiment/binary_results.csv
+scale_pos_weight: '400'
+subsample:
+- 0.01
+- 0.6

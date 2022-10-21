@@ -1,8 +1,8 @@
 import subprocess
 import yaml
+from yaml import CLoader as Loader, CDumper as Dumper
 
-
-def run_docker(config, training: True, multiclass: False):
+def run_docker(config, training = True):
 
     if training:
         config_modeling = config['modeling']
@@ -11,16 +11,16 @@ def run_docker(config, training: True, multiclass: False):
         config_modeling = config['scoring']
         docker_img = 'o2sk_modeling_scoring'
 
-    if multiclass:
-        config_final = config_modeling['multiclass']
+
+    with open(config_modeling['docker_config_path'], 'w') as f:
+        yaml.dump(config_modeling, f)
+    if training:     
+        subprocess.call(f"docker run -it --name sk_training_v1 -v {config_modeling['data_path']}:/home/dataset/ -v {config_modeling['docker_config_path']}:/home/config.yml -v {config_modeling['model_path']}:/output {docker_img}:latest", shell=True)
     else:
-        config_final = config_modeling['binary']
+        subprocess.call(f"docker run -it --name sk_scoring_v1 -v {config_modeling['data_path']}:/home/dataset/ -v {config_modeling['docker_config_path']}:/home/config.yml -v {config_modeling['model_path']}:/output/model.bin {docker_img}:latest", shell=True)
 
-    with open(config_final['config_path_docker'], 'w') as file:
-        yaml.dump(config_final, indent=4)
-
-    with open("/home/frovis/o2sk/xgboost-python-pyspark/docker/output.log", "a") as output:
-        subprocess.call(f"docker run -it --name sk_training_v1 -v {config_final['data_path']}:/home/dataset/ -v {config_final['config_path_docker']}:/home/config.yml -v sk_modeling:/output {docker_img}:latest", shell=True, stdout=output, stderr=output)
-        #subprocess.call("CID=$(docker run -d -v sk_modeling:/output busybox true)", shell=True, stdout=output, stderr=output)
-        subprocess.call("docker cp sk_training_v1:/output ./", shell=True, stdout=output, stderr=output)
-
+f = open('config.yml', 'r')
+cfg = yaml.load(f, Loader)
+run_docker(cfg)
+# docker run -it -v <data_path>:/home/dataset/ -v <config_path>:/home/config.yml sparkxgb:latest /bin/bash
+# docker run -it -v /home/frovis/o2_sk/xgboost-python-pyspark/docker/data/:/home/dataset -v /home/frovis/o2_sk/xgboost-python-pyspark/docker/config.yml:/home/config.yml xgb:latest /bin/bash  

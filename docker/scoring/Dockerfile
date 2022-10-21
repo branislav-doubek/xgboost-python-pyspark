@@ -81,7 +81,7 @@ RUN python3.7 get-pip.py
 RUN python3.7 -m pip install --upgrade pip
 RUN pip install pandas===0.23.4 xgboost===0.82 numpy sklearn optuna pyyaml
 ENTRYPOINT [ "/home/xgboost-python-pyspark/pyspark_xgb/start.sh"]
-CMD ["score_binary_class.py"]
+CMD ["score.py"]
 #RUN ./home/xgboost-python-pyspark/pyspark_xgb/start.sh train_binary_class.py
 
 #docker build -t spark:latest . --no-cache
