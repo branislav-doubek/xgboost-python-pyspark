@@ -3,7 +3,7 @@ import traceback
 import numpy as np
 from pyspark.ml.feature import VectorAssembler
 from spark import get_spark, get_logger
-from utils import load_config, predict, load_model, 
+from utils import load_config, predict, load_model 
 
 # assert len(os.environ.get('JAVA_HOME')) != 0, 'JAVA_HOME not set'
 assert len(os.environ.get('SPARK_HOME')) != 0, 'SPARK_HOME not set'
