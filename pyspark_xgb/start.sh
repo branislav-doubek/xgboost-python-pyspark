@@ -9,5 +9,4 @@ EXEC_PY=$1
 
 spark-submit --name 'spark xgb sample' \
              --master local \
-             --jars xgboost-python-pyspark/pyspark_xgb/jars/xgboost4j-spark-0.82.jar,xgboost-python-pyspark/pyspark_xgb/jars/xgboost4j-0.82.jar xgboost-python-pyspark/pyspark_xgb/train_binary_class.py \
-             ${EXEC_PY}
+             --jars xgboost-python-pyspark/pyspark_xgb/jars/xgboost4j-spark-0.82.jar,xgboost-python-pyspark/pyspark_xgb/jars/xgboost4j-0.82.jar xgboost-python-pyspark/pyspark_xgb/${EXEC_PY}

@@ -52,8 +52,9 @@ RUN git clone --recursive https://github.com/dmlc/xgboost && \
 	cd xgboost && \
 	git checkout tags/v0.82 && \
 	git submodule update --init --recursive && \
-	make -j4 && \
-	cd jvm-packages; mvn package
+	make -j4 &&\
+	cd jvm-packages && \
+    mvn package -DskipTests
 
 WORKDIR /home
 RUN git clone https://github.com/branislav-doubek/xgboost-python-pyspark.git
@@ -68,7 +69,7 @@ WORKDIR /home
 RUN curl -O https://archive.apache.org/dist/spark/spark-2.4.0/spark-2.4.0-bin-hadoop2.6.tgz
 RUN tar zxvf spark-2.4.0-bin-hadoop2.6.tgz
 RUN mv spark-2.4.0-bin-hadoop2.6 /usr/local/
-
+ 
 ENV SPARK_HOME /usr/local/spark-2.4.0-bin-hadoop2.6
 ENV PATH "$PATH:$SPARK_HOME/bin"
 ENV JAVA_HOME /usr/lib/jvm/java
@@ -81,8 +82,9 @@ RUN python3.7 get-pip.py
 RUN python3.7 -m pip install --upgrade pip
 RUN pip install pandas===0.23.4 xgboost===0.82 numpy sklearn optuna pyyaml
 ENTRYPOINT [ "/home/xgboost-python-pyspark/pyspark_xgb/start.sh"]
-CMD ["train_binary_class.py"]
+CMD ["train.py"]
+
 #RUN ./home/xgboost-python-pyspark/pyspark_xgb/start.sh train_binary_class.py
 
 #docker build -t spark:latest . --no-cache
-#docker run -i -t doubekspark:latest /bin/bash
+#docker run -i -t spark:latest /bin/bash

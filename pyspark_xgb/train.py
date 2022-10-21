@@ -2,9 +2,9 @@ import os
 import traceback
 import numpy as np
 from pyspark.ml.feature import VectorAssembler
-from spark import get_spark, get_logger
+from spark import get_spark
 from utils import create_feature_map, create_feature_imp, load_config
-from model_utils import weight_mapping, train_model, load_model, predict, udf_logloss, save_model, optimize
+from utils import weight_mapping, train_model, load_model, predict, udf_logloss, save_model, optimize
 assert len(os.environ.get('SPARK_HOME')) != 0, 'SPARK_HOME not set'
 assert not os.environ.get(
     'PYSPARK_SUBMIT_ARGS'), 'PYSPARK_SUBMIT_ARGS should not be set'
@@ -54,7 +54,6 @@ def main():
             "eta": 0.1, "eval_metric": "aucpr",
             "gamma": 1, "max_depth": 5, "min_child_weight": 1.0,
             "objective": "binary:logistic", "seed": 0,
-            # xgboost4j only
             "num_round": 1000, "num_early_stopping_rounds": 100,
             "maximize_evaluation_metrics": False,   # minimize logloss
             "num_workers": 1, "use_external_memory": False,
@@ -63,7 +62,6 @@ def main():
         optimize(train, valid, FEATURES, LABEL, WEIGHT, config['n_trials'])
   
         jmodel = train_model(train, xgb_params, FEATURES, LABEL, WEIGHT)
-        # save model - using native booster for single node library to read
         model_path = MODEL_PATH + '/model.bin'
         save_model(jmodel, model_path)
 

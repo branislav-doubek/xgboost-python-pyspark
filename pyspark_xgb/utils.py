@@ -183,7 +183,7 @@ def cross_validate(train, valid, xgb_params, features_col, label_col, weight_col
     score = calculate_statistics(preds, multiclass)
     return score
 
-def optimize(train, valid, features_col, label_col, weight_col, n_trials):
+def optimize(train, valid, features_col, label_col, weight_col, n_trials, cfg):
     def objective(trial):
         max_depth = trial.suggest_int('max_depth', 5, 30)
         eta = trial.suggest_loguniform('eta', 0.001, 0.01)
