@@ -41,13 +41,13 @@ def main():
 
         assembler = VectorAssembler(inputCols=features, outputCol=FEATURES)
 
-        score = assembler.transform(score).select(FEATURES, safe_cols)
+        score = assembler.transform(score).select(FEATURES)
         # [Optional] load model training by xgboost, predict and get validation metric
         local_model_path = LOCAL_MODEL_PATH + '/model.bin'
         xgb_cls_model = load_model(local_model_path)
         pred = predict(xgb_cls_model, score)
 
-        pred.select(safe_cols + 'probability').write.parquet("/data_output/prediction")
+        pred.write.parquet("/data_output/prediction")
 
     except Exception:
         print(traceback.print_exc())

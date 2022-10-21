@@ -47,7 +47,7 @@ def main():
 
         train = assembler.transform(train).select(FEATURES, LABEL, WEIGHT)
         valid = assembler.transform(valid).select(FEATURES, LABEL, WEIGHT)
-        test = assembler.transform(test).select(FEATURES, safe_cols)
+        test = assembler.transform(test).select(FEATURES)
         
         # set param map
         xgb_params = {
