@@ -46,7 +46,6 @@ def main():
 
         train = assembler.transform(train).select(FEATURES, LABEL, WEIGHT)
         valid = assembler.transform(valid).select(FEATURES, LABEL, WEIGHT)
-        test = assembler.transform(test).select(FEATURES)
         
 
         best_params = optimize(train, valid, FEATURES, LABEL, WEIGHT, config)
