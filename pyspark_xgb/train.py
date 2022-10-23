@@ -64,17 +64,19 @@ def main():
             'ID_CUSTOMER',
             'LABEL',
             'CD_PERIOD']
-            
+
         safe_cols = [
             'ID_CUSTOMER',
             'label',
             'CD_PERIOD']
         features = [c for c in train.columns if c not in  safe_cols]
-
+        print(features)
         assembler = VectorAssembler(inputCols=features, outputCol=FEATURES)
         train, weights = weight_mapping(train, LABEL)
+        print(weights)
+        print(train.show())
         valid = weight_mapping(valid, LABEL, weights)[0]
-
+        print(valid.show())
         train = assembler.transform(train).select(FEATURES, LABEL, WEIGHT)
         valid = assembler.transform(valid).select(FEATURES, LABEL, WEIGHT)
         
