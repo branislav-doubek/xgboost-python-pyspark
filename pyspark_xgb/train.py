@@ -68,6 +68,7 @@ def main():
         safe_cols = [
             'ID_CUSTOMER',
             'label',
+            'class',
             'CD_PERIOD']
         features = [c for c in train.columns if c not in  safe_cols]
         print(features)
