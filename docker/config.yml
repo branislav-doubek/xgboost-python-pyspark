@@ -57,8 +57,9 @@ modeling:
     gamma: [1, 30]
     min_child_weight: [1, 50]
     colsample_bytree: [0.3, 1]
+    n_trials: 4 # how many different hyperparameters tries
     config_path: /home/frovis/o2_sk/xgboost-python-pyspark/docker/config.yml
-    docker_config_path: /home/frovis/o2_sk/xgboost-python-pyspark/docker/config_tmp.yml
+    docker_config_path: /home/frovis/o2_sk/xgboost-python-pyspark/docker/config_training.yml
     data_path: /home/frovis/o2_sk/xgboost-python-pyspark/docker/data/
     log_path: /home/frovis/o2_sk/xgboost-python-pyspark/docker/experiment/binary_training.log
     params_result_path: /home/frovis/o2_sk/xgboost-python-pyspark/docker/experiment/binary_results.csv
@@ -66,7 +67,8 @@ modeling:
     model_path: /home/frovis/o2_sk/xgboost-python-pyspark/docker/experiment/
 scoring:
     model_path: '/home/frovis/o2_sk/xgboost-python-pyspark/docker/experiment/model.bin'
-    features_path: '/home/frovis/o2_sk/xgboost-python-pyspark/docker/data/'
+    data_path: '/home/frovis/o2_sk/xgboost-python-pyspark/docker/data/'
     scoring_output_path: '/home/frovis/o2_sk/xgboost-python-pyspark/docker/experiment/'
+    docker_config_path: /home/frovis/o2_sk/xgboost-python-pyspark/docker/config_scoring.yml
 
 auth_cfg: '/home/o2spark/config.ini'
