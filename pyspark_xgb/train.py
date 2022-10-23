@@ -64,6 +64,11 @@ def main():
             'ID_CUSTOMER',
             'LABEL',
             'CD_PERIOD']
+            
+        safe_cols = [
+            'ID_CUSTOMER',
+            'label',
+            'CD_PERIOD']
         features = [c for c in train.columns if c not in  safe_cols]
 
         assembler = VectorAssembler(inputCols=features, outputCol=FEATURES)
