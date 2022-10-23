@@ -234,6 +234,7 @@ def optimize(train, valid, features_col, label_col, weight_col, cfg):
             "maximize_evaluation_metrics": False,   # minimize logloss
             "num_workers": 1, "use_external_memory": False,
             "missing": np.nan,
+            "num_class": cfg['num_class']
         }
         xgb_params['max_depth'] = max_depth
         xgb_params['eta'] = eta
