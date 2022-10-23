@@ -56,7 +56,7 @@ def main():
                     header=True)
 
         # preprocess
-        LABEL = 'LABEL'
+        LABEL = 'label'
         FEATURES = 'features'
         WEIGHT = 'weight'
 
