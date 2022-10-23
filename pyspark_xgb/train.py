@@ -28,7 +28,6 @@ def main():
         # load data
         train = spark.read.parquet(DATASET_PATH + '/train')
         valid = spark.read.parquet(DATASET_PATH + '/valid')
-        test = spark.read.parquet(DATASET_PATH + '/test')
 
         # preprocess
         LABEL = 'LABEL'
@@ -49,19 +48,9 @@ def main():
         valid = assembler.transform(valid).select(FEATURES, LABEL, WEIGHT)
         test = assembler.transform(test).select(FEATURES)
         
-        # set param map
-        xgb_params = {
-            "eta": 0.1, "eval_metric": "aucpr",
-            "gamma": 1, "max_depth": 5, "min_child_weight": 1.0,
-            "objective": "binary:logistic", "seed": 0,
-            "num_round": 1000, "num_early_stopping_rounds": 100,
-            "maximize_evaluation_metrics": False,   # minimize logloss
-            "num_workers": 1, "use_external_memory": False,
-            "missing": np.nan,
-        }
-        optimize(train, valid, FEATURES, LABEL, WEIGHT, config['n_trials'])
-  
-        jmodel = train_model(train, xgb_params, FEATURES, LABEL, WEIGHT)
+
+        best_params = optimize(train, valid, FEATURES, LABEL, WEIGHT, config)
+        jmodel = train_model(train, best_params, FEATURES, LABEL, WEIGHT)
         model_path = MODEL_PATH + '/model.bin'
         save_model(jmodel, model_path)
 

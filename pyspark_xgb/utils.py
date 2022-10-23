@@ -1,3 +1,4 @@
+from typing import Optional
 from spark import get_spark, get_logger
 import yaml
 
@@ -12,6 +13,7 @@ from pyspark.sql import types as T
 from pyspark.mllib.evaluation import MulticlassMetrics
 from pyspark.ml.wrapper import JavaWrapper
 import optuna
+from typing import Optional
 from spark import get_spark
 import os
 
@@ -183,14 +185,45 @@ def cross_validate(train, valid, xgb_params, features_col, label_col, weight_col
     score = calculate_statistics(preds, multiclass)
     return score
 
-def optimize(train, valid, features_col, label_col, weight_col, n_trials, cfg):
+
+def optimize(train, valid, features_col, label_col, weight_col, cfg):
     def objective(trial):
-        max_depth = trial.suggest_int('max_depth', 5, 30)
-        eta = trial.suggest_loguniform('eta', 0.001, 0.01)
-        gamma = trial.suggest_float('gamma', 1, 30)
-        subsample = trial.suggest_float('subsample', 0.01, 0.6)
-        min_child_weight = trial.suggest_float('min_child_weight', 1, 50)
-        colsample_bytree = trial.suggest_float('colsample_bytree', 0.3, 1)
+        if cfg['max_depth']:
+            max_depth = trial.suggest_int('max_depth', 
+                                          cfg['max_depth'][0], 
+                                          cfg['max_depth'][1])
+        else:
+            max_depth = trial.suggest_int('max_depth', 5, 30)
+        if cfg['eta']:
+            eta = trial.suggest_loguniform('eta', 
+                                    cfg['eta'][0], 
+                                    cfg['eta'][1])
+        else:
+            eta = trial.suggest_loguniform('eta', 0.001, 0.01)
+        if cfg['gamma']:
+            gamma = trial.suggest_float('gamma', 
+                                    cfg['gamma'][0], 
+                                    cfg['gamma'][1])
+        else:
+            gamma = trial.suggest_float('eta', 1, 30)
+        if cfg['subsample']:
+            subsample = trial.suggest_float('subsample', 
+                                    cfg['subsample'][0], 
+                                    cfg['subsample'][1])
+        else:
+            subsample = trial.suggest_float('subsample', 0.01, 0.6)
+        if cfg['min_child_weight']:
+            min_child_weight = trial.suggest_float('min_child_weight', 
+                                    cfg['min_child_weight'][0], 
+                                    cfg['min_child_weight'][1])
+        else:
+            min_child_weight = trial.suggest_float('subsample', 1, 50)
+        if cfg['colsample_bytree']:
+            colsample_bytree = trial.suggest_float('colsample_bytree', 
+                                    cfg['colsample_bytree'][0], 
+                                    cfg['colsample_bytree'][1])
+        else:
+            colsample_bytree = trial.suggest_float('subsample', 0.3, 1)
 
         xgb_params = {
             "eta": 0.1, "eval_metric": "aucpr",
@@ -212,13 +245,9 @@ def optimize(train, valid, features_col, label_col, weight_col, n_trials, cfg):
         return score
 
     study = optuna.create_study(direction='maximize')
-    study.optimize(objective, n_trials=n_trials)
+    study.optimize(objective, n_trials=cfg['n_trials'])
     
     best_params = study.best_params
-    model = train_model(train, best_params, features_col, label_col, weight_col)
-    preds = predict(model, valid)
-    preds = preds.withColumn(label_col, F.col(label_col).cast(T.DoubleType()))
-    score = calculate_statistics(preds)
     print(f'Best params {best_params}')
-    print(f'Score {score}')
+    return best_params
 
