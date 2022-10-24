@@ -143,7 +143,7 @@ def calculate_statistics(predictions, label_col, multiclass=False):
     predictions = predictions.withColumnRenamed(label_col, 'LABEL')
     labels = predictions.rdd.map(lambda lp: float(lp.LABEL)).distinct().collect()
     score = 0
-    for label in sorted(labels[1:]):
+    for label in sorted(labels):
         print(
             'Class %s precision = %s' % (label, metrics.precision(float(label))))
         print(
