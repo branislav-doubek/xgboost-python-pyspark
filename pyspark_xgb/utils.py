@@ -136,11 +136,11 @@ def load_model(path):
     else:
         print('model does not exist')
 
-def calculate_statistics(predictions, multiclass=False):
+def calculate_statistics(predictions, label_col, multiclass=False):
     predictions_labels = predictions.rdd.map(
-                lambda x: (x['prediction'], x['LABEL']))
+                lambda x: (x['prediction'], x['class']))
     metrics = MulticlassMetrics(predictions_labels)
-    labels = predictions.rdd.map(lambda lp: float(lp.LABEL)).distinct().collect()
+    labels = predictions.rdd.map(lambda lp: float(lp.class)).distinct().collect()
     score = 0
     for label in sorted(labels[1:]):
         print(
@@ -182,7 +182,10 @@ def cross_validate(train, valid, xgb_params, features_col, label_col, weight_col
     # get validation metric
     preds = predict(jmodel, valid)
     preds = preds.withColumn(label_col, F.col(label_col).cast(T.DoubleType()))
-    score = calculate_statistics(preds, multiclass)
+    if int(xgb_params['num_class']) > 2:
+        score = calculate_statistics(preds, multiclass=True)
+    else:
+        score = calculate_statistics(preds, multiclass=False)
     return score
 
 
