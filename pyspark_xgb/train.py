@@ -2,7 +2,6 @@ import os
 import traceback
 import numpy as np
 from pyspark.ml.feature import VectorAssembler
-from pyspark.sql.types import StructField, StructType, IntegerType, DoubleType, FloatType, StringType
 from spark import get_spark
 from utils import create_feature_map, create_feature_imp, load_config
 from utils import weight_mapping, train_model, load_model, predict, udf_logloss, save_model, optimize
@@ -18,62 +17,19 @@ CONFIG_PATH = '/home/config.yml'
 MODEL_PATH = '/output'
 LOCAL_MODEL_PATH = MODEL_PATH
 
-
-def get_mtrain_schema():
-    return StructType([
-        StructField('sepal_length', FloatType(), False),
-        StructField('sepal_width', FloatType(), True),
-        StructField('petal_length', FloatType(), False),
-        StructField('petal_width', FloatType(), False),
-        StructField('class', StringType(), False),
-        StructField('label', DoubleType(), False)])
-
-
-def get_mtest_schema():
-    return StructType([
-        StructField('sepal_length', FloatType(), False),
-        StructField('sepal_width', FloatType(), True),
-        StructField('petal_length', FloatType(), False),
-        StructField('petal_width', FloatType(), False)])
-    
-
 def main():
 
     try:
         config = load_config(CONFIG_PATH)
         spark = get_spark(app_name="pyspark-xgb")
-
-
         # load data
-        #train = spark.read.parquet(DATASET_PATH + '/train')
-        #valid = spark.read.parquet(DATASET_PATH + '/valid')
-
-        train = spark.read.csv(DATASET_PATH + "/iris_train.csv",
-                    get_mtrain_schema(),
-                    header=True)
-        valid = spark.read.csv(DATASET_PATH + "/iris_test.csv",
-                    get_mtrain_schema(),
-                    header=True)
-
-        # preprocess
-        LABEL = 'label'
+        train = spark.read.parquet(DATASET_PATH + '/train')
+        valid = spark.read.parquet(DATASET_PATH + '/valid')
+        safe_cols = config['safe_cols']
+        LABEL = config['label_col']
         FEATURES = 'features'
         WEIGHT = 'weight'
-
-        safe_cols = [
-            'ID_CUSTOMER',
-            'LABEL',
-            'CD_PERIOD']
-
-        safe_cols = [
-            'ID_CUSTOMER',
-            'label',
-            'class',
-            'CD_PERIOD']
-
-        print(config['label_col'])
-        print(config['safe_cols'])
-        features = [c for c in train.columns if c not in  safe_cols]
+        features = [c for c in train.columns if c not in safe_cols]
         print(features)
         assembler = VectorAssembler(inputCols=features, outputCol=FEATURES)
         train, weights = weight_mapping(train, LABEL)

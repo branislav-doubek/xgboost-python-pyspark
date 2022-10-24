@@ -1,7 +1,6 @@
-from typing import Optional
 from spark import get_spark, get_logger
 import yaml
-
+import logging
 # import joblib
 import pyspark.sql.functions as f
 import numpy as np
@@ -13,9 +12,19 @@ from pyspark.sql import types as T
 from pyspark.mllib.evaluation import MulticlassMetrics
 from pyspark.ml.wrapper import JavaWrapper
 import optuna
-from typing import Optional
 from spark import get_spark
 import os
+
+logging.basicConfig(level=logging.INFO)
+
+logger_hyperparam = logging.getLogger('hyperparam logging')
+handler_hyperparam = logging.FileHandler('/output/hyperparam.log')
+logger_hyperparam.addHandler(handler_hyperparam)
+
+logger_statistics = logging.getLogger('statistics logging')
+handler_statistics = logging.FileHandler('/output/statistics.log')
+logger_statistics.addHandler(handler_statistics)
+
 
 def create_feature_map(fname, features):
     '''Write feature name for xgboost to map 'fn' -> feature name
@@ -136,7 +145,7 @@ def load_model(path):
     else:
         print('model does not exist')
 
-def calculate_statistics(predictions, label_col, multiclass=False):
+def calculate_statistics(predictions, label_col, multiclass=False, log=False):
     predictions_labels = predictions.rdd.map(
                 lambda x: (x['prediction'], x[label_col]))
     metrics = MulticlassMetrics(predictions_labels)
@@ -144,6 +153,10 @@ def calculate_statistics(predictions, label_col, multiclass=False):
     labels = predictions.rdd.map(lambda lp: float(lp.LABEL)).distinct().collect()
     score = 0
     for label in sorted(labels):
+        if log:
+            logger_statistics.info('Class %s precision = %s' % (label, metrics.precision(float(label))))
+            logger_statistics.info('Class %s recall = %s' % (label, metrics.recall(float(label))))
+            logger_statistics.info('Class %s F1 Measure = %s' % (label, metrics.fMeasure(label, beta=1.0)))
         print(
             'Class %s precision = %s' % (label, metrics.precision(float(label))))
         print(
@@ -157,17 +170,23 @@ def calculate_statistics(predictions, label_col, multiclass=False):
 
     if multiclass:
         score = score/(len(labels)-1)
+        if log:
+            logger_statistics.info('Weighted F1-Score: %s', score)
         print('Weighted F1-Score')
     else:
         print('Recall')
+        if log:
+            logger_statistics.info('Recall: %s', score)
     print(score)
     cm = metrics.confusionMatrix()
     print('Confusion Matrix')
+    if log:
+        logger_statistics.info('CM: %s', cm)
     print(cm)
     return score
 
 
-def cross_validate(train, valid, xgb_params, features_col, label_col, weight_col, multiclass=False, summary=False):
+def cross_validate(train, valid, xgb_params, features_col, label_col, weight_col, multiclass=False, summary=False, log=False):
     # set param map
     spark = get_spark(app_name="pyspark-xgb")
     scala_map = spark._jvm.PythonUtils.toScalaMap(xgb_params)
@@ -184,9 +203,9 @@ def cross_validate(train, valid, xgb_params, features_col, label_col, weight_col
     preds = predict(jmodel, valid)
     preds = preds.withColumn(label_col, F.col(label_col).cast(T.DoubleType()))
     if int(xgb_params['num_class']) > 2:
-        score = calculate_statistics(preds, label_col, multiclass=True)
+        score = calculate_statistics(preds, label_col, multiclass=True, log)
     else:
-        score = calculate_statistics(preds, label_col, multiclass=False)
+        score = calculate_statistics(preds, label_col, multiclass=False, log)
     return score
 
 
@@ -247,6 +266,8 @@ def optimize(train, valid, features_col, label_col, weight_col, cfg):
         xgb_params['min_child_weight'] = min_child_weight
         xgb_params['colsample_bytree'] = colsample_bytree
         score = cross_validate(train, valid, xgb_params, features_col, label_col, weight_col, summary=False)
+        logger_hyperparam.info('xgb_params in trial: %s' xgb_params)
+        logger_hyperparam.info('score: %s' score)
         return score
 
     study = optuna.create_study(direction='maximize')
