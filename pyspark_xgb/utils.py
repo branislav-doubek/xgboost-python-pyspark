@@ -246,15 +246,15 @@ def optimize(train, valid, features_col, label_col, weight_col, cfg):
             colsample_bytree = trial.suggest_float('subsample', 0.3, 1)
         
         xgb_params = {
-            "eta": 0.1, "eval_metric": cfg['eval_metric'],
+            "eta": 0.1, "eval_metric": "aucpr",
             "gamma": 1, "max_depth": 5, "min_child_weight": 1.0,
-            "objective": cfg['objective'], "seed": 0,
+            "objective": "binary:logistic", "seed": 0,
             # xgboost4j only
             "num_round": 100, "num_early_stopping_rounds": 10,
             "maximize_evaluation_metrics": False,   # minimize logloss
             "num_workers": 1, "use_external_memory": False,
             "missing": np.nan,
-            "num_class": int(cfg['num_class'])
+            #"num_class": int(cfg['num_class'])
         }
         xgb_params['max_depth'] = max_depth
         xgb_params['eta'] = eta
