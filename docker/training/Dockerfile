@@ -56,7 +56,10 @@ RUN git clone --recursive https://github.com/dmlc/xgboost && \
 	cd jvm-packages && \
     mvn package -DskipTests
 
+
+
 WORKDIR /home
+ADD "https://api.github.com/repos/branislav-doubek/xgboost-python-pyspark/commits?per_page=1" latest_commit
 RUN git clone https://github.com/branislav-doubek/xgboost-python-pyspark.git
 RUN mkdir /home/xgboost-python-pyspark/pyspark_xgb/jars
 WORKDIR /home/xgboost-python-pyspark/pyspark_xgb/jars
@@ -81,6 +84,8 @@ RUN curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py
 RUN python3.7 get-pip.py
 RUN python3.7 -m pip install --upgrade pip
 RUN pip install pandas===0.23.4 xgboost===0.82 numpy sklearn optuna pyyaml
+
+
 ENTRYPOINT [ "/home/xgboost-python-pyspark/pyspark_xgb/start.sh"]
 CMD ["train.py"]
 
