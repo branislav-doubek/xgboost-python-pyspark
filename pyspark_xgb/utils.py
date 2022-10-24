@@ -203,9 +203,9 @@ def cross_validate(train, valid, xgb_params, features_col, label_col, weight_col
     preds = predict(jmodel, valid)
     preds = preds.withColumn(label_col, F.col(label_col).cast(T.DoubleType()))
     if int(xgb_params['num_class']) > 2:
-        score = calculate_statistics(preds, label_col, multiclass=True, log)
+        score = calculate_statistics(preds, label_col, log=True)
     else:
-        score = calculate_statistics(preds, label_col, multiclass=False, log)
+        score = calculate_statistics(preds, label_col, log=True)
     return score
 
 
