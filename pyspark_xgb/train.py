@@ -34,20 +34,30 @@ def main():
         valid = spark.read.parquet(DATASET_PATH + '/valid')
         safe_cols = config['safe_cols']
         LABEL = config['label_col']
+# preprocess
+        LABEL = 'LABEL'
         FEATURES = 'features'
         WEIGHT = 'weight'
+
+        safe_cols = [
+            'ID_CUSTOMER',
+            'LABEL',
+            'CD_PERIOD']
+        #FEATURES = 'features'
+        # WEIGHT = 'weight'
         features = [c for c in train.columns if c not in safe_cols]
         assembler = VectorAssembler(inputCols=features, outputCol=FEATURES)
         train, weights = weight_mapping(train, LABEL)
         print(weights)
-        print(train.count)
+        print(train.count())
         valid = weight_mapping(valid, LABEL, weights)[0]
-        print(train.count)
+        print(train.count())
         train = assembler.transform(train).select(FEATURES, LABEL, WEIGHT)
-        print(train.count)
+        print(valid.count())
         valid = assembler.transform(valid).select(FEATURES, LABEL, WEIGHT)
+        print(valid.count())
         
-        
+
         best_params = optimize(train, valid, FEATURES, LABEL, WEIGHT, config)
         logger_params.info('Best parameters: %s', best_params)
         jmodel = train_model(train, best_params, FEATURES, LABEL, WEIGHT)
