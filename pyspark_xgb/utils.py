@@ -254,8 +254,9 @@ def optimize(train, valid, features_col, label_col, weight_col, cfg):
             "maximize_evaluation_metrics": False,   # minimize logloss
             "num_workers": 1, "use_external_memory": False,
             "missing": np.nan,
-            #"num_class": int(cfg['num_class'])
         }
+        if int(cfg['num_class']) > 2:
+            xgb_params['num_class'] = int(cfg['num_class'])
         xgb_params['max_depth'] = max_depth
         xgb_params['eta'] = eta
         xgb_params['gamma'] = gamma
