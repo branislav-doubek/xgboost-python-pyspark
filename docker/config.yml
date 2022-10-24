@@ -51,7 +51,7 @@ modeling:
     eval_metric: 'aucpr' # mlogloss for multiclass, aucpr for binary
     objective: 'binary:logistic' # multi:softprob for multiclass, binary:logistic for binary
     scale_pos_weight: '400'
-    num_class: 3
+    num_class: 2
     max_depth: [5, 30] # 50
     eta: [0.001, 0.01]   # 0.01
     subsample: [0.01, 0.6]
@@ -59,7 +59,7 @@ modeling:
     min_child_weight: [1, 50]
     colsample_bytree: [0.3, 1]
     safe_cols: ['ID_CUSTOMER', 'LABEL', 'CD_PERIOD']
-    label_col: ['LABEL']
+    label_col: 'LABEL'
     n_trials: 4 # how many different hyperparameters tries
     docker_config_path: /home/frovis/o2_sk/xgboost-python-pyspark/docker/config_training.yml
     data_path: /home/frovis/o2_sk/xgboost-python-pyspark/docker/data/
