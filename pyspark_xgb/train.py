@@ -70,6 +70,9 @@ def main():
             'label',
             'class',
             'CD_PERIOD']
+
+        print(config['label_col'])
+        print(config['safe_cols'])
         features = [c for c in train.columns if c not in  safe_cols]
         print(features)
         assembler = VectorAssembler(inputCols=features, outputCol=FEATURES)
