@@ -152,7 +152,11 @@ def calculate_statistics(predictions, label_col, multiclass=False, log=False):
     predictions = predictions.withColumnRenamed(label_col, 'LABEL')
     labels = predictions.rdd.map(lambda lp: float(lp.LABEL)).distinct().collect()
     score = 0
-    for label in sorted(labels):
+    if multiclass:
+        part_ds = labels
+    else:
+        part_ds = labels[1:]
+    for label in sorted(part_ds):
         if log:
             logger_statistics.info('Class %s precision = %s' % (label, metrics.precision(float(label))))
             logger_statistics.info('Class %s recall = %s' % (label, metrics.recall(float(label))))
@@ -188,13 +192,6 @@ def calculate_statistics(predictions, label_col, multiclass=False, log=False):
 
 def cross_validate(train, valid, xgb_params, features_col, label_col, weight_col, multiclass=False, summary=False, log=False):
     # set param map
-    spark = get_spark(app_name="pyspark-xgb")
-    scala_map = spark._jvm.PythonUtils.toScalaMap(xgb_params)
-
-    # set evaluation set
-    eval_set = {'eval': valid._jdf}
-    scala_eval_set = spark._jvm.PythonUtils.toScalaMap(eval_set)
-
     jmodel = train_model(train, xgb_params, features_col, label_col, weight_col)
     if summary:
         print_summary(jmodel)
@@ -203,7 +200,7 @@ def cross_validate(train, valid, xgb_params, features_col, label_col, weight_col
     preds = predict(jmodel, valid)
     preds = preds.withColumn(label_col, F.col(label_col).cast(T.DoubleType()))
     if int(xgb_params['num_class']) > 2:
-        score = calculate_statistics(preds, label_col, log=True)
+        score = calculate_statistics(preds, label_col, multiclass=True, log=True)
     else:
         score = calculate_statistics(preds, label_col, log=True)
     return score
