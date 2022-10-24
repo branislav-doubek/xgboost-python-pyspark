@@ -266,8 +266,8 @@ def optimize(train, valid, features_col, label_col, weight_col, cfg):
         xgb_params['min_child_weight'] = min_child_weight
         xgb_params['colsample_bytree'] = colsample_bytree
         score = cross_validate(train, valid, xgb_params, features_col, label_col, weight_col, summary=False)
-        logger_hyperparam.info('xgb_params in trial: %s' xgb_params)
-        logger_hyperparam.info('score: %s' score)
+        logger_hyperparam.info('xgb_params in trial: %s', xgb_params)
+        logger_hyperparam.info('score: %s', score)
         return score
 
     study = optuna.create_study(direction='maximize')

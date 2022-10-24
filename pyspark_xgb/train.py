@@ -1,4 +1,5 @@
 import os
+import logging
 import traceback
 import numpy as np
 from pyspark.ml.feature import VectorAssembler
@@ -10,6 +11,12 @@ assert not os.environ.get(
     'PYSPARK_SUBMIT_ARGS'), 'PYSPARK_SUBMIT_ARGS should not be set'
 
 abspath = os.path.abspath(__file__)
+logging.basicConfig(level=logging.INFO)
+
+logger_params = logging.getLogger('best params log')
+handler_params = logging.FileHandler('/output/best_params.log')
+logger_params.addHandler(handler_params)
+
 PARENT_PROJ_PATH = '/'.join(abspath.split(os.sep)[:-2])
 PYSPARK_PROJ_PATH = '/'.join(abspath.split(os.sep)[:-1])
 DATASET_PATH = '/home/dataset'
@@ -42,6 +49,7 @@ def main():
         
 
         best_params = optimize(train, valid, FEATURES, LABEL, WEIGHT, config)
+        logger_params.info('Best parameters: %s', best_params)
         jmodel = train_model(train, best_params, FEATURES, LABEL, WEIGHT)
         model_path = MODEL_PATH + '/model.bin'
         save_model(jmodel, model_path)
