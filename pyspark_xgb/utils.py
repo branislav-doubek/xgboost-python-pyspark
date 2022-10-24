@@ -138,9 +138,10 @@ def load_model(path):
 
 def calculate_statistics(predictions, label_col, multiclass=False):
     predictions_labels = predictions.rdd.map(
-                lambda x: (x['prediction'], x['class']))
+                lambda x: (x['prediction'], x[label_col]))
     metrics = MulticlassMetrics(predictions_labels)
-    labels = predictions.rdd.map(lambda lp: float(lp.class)).distinct().collect()
+    predictions = predictions.withColumnRenamed(label_col, 'LABEL')
+    labels = predictions.rdd.map(lambda lp: float(lp.LABEL)).distinct().collect()
     score = 0
     for label in sorted(labels[1:]):
         print(
