@@ -53,6 +53,7 @@ def main():
         valid = weight_mapping(valid, LABEL, weights)[0]
         print(train.count())
         train = assembler.transform(train).select(FEATURES, LABEL, WEIGHT)
+        print(train.count())
         print(valid.count())
         valid = assembler.transform(valid).select(FEATURES, LABEL, WEIGHT)
         print(valid.count())
