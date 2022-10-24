@@ -1,0 +1,1 @@
+Best parameters: {'max_depth': 9, 'eta': 0.00904793171858365, 'gamma': 16.696307265039575, 'subsample': 0.355627820741781, 'min_child_weight': 38.08016355361017, 'colsample_bytree': 0.8797394436936083}
