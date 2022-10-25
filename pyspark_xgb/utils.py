@@ -188,7 +188,7 @@ def cross_validate(train, valid, xgb_params, features_col, label_col, weight_col
         print_summary(jmodel)
 
     # get validation metric
-    preds = predict(jmodel, valid)
+    preds = predict(jmodel, valid, spark)
     preds = preds.withColumn(label_col, F.col(label_col).cast(T.DoubleType()))
     if 'num_class' in xgb_params:
         score = calculate_statistics(preds, label_col, multiclass=True, log=True)
