@@ -1,4 +1,3 @@
-from spark import get_spark, get_logger
 import yaml
 import logging
 # import joblib
@@ -12,7 +11,6 @@ from pyspark.sql import types as T
 from pyspark.mllib.evaluation import MulticlassMetrics
 from pyspark.ml.wrapper import JavaWrapper
 import optuna
-from spark import get_spark
 import os
 
 logging.basicConfig(level=logging.INFO)
@@ -54,9 +52,6 @@ def print_summary(jmodel):
             jmodel(ml.dmlc.xgboost4j.scala.spark.XGBoostClassifier)
     '''
     # get spark and logger
-    spark = get_spark(app_name="pyspark-xgb")
-    logger = get_logger(spark, "app")
-
     train_summary = jmodel.summary().trainObjectiveHistory()
     valid_summary = jmodel.summary().validationObjectiveHistory()
     dataset_summary = [train_summary]
@@ -78,7 +73,6 @@ def print_summary(jmodel):
 
         if stop_flg is True:
             break
-        logger.info(printString)
 
 
 def load_config(path):
@@ -111,8 +105,7 @@ def weight_mapping(df: DataFrame, label, weights=False):
     return df.withColumn('weight', mapping_expr.getItem(F.col(label))), weights
 
 
-def train_model(train, params, feature_col, label_col, weight_col):
-    spark = get_spark(app_name="pyspark-xgb")
+def train_model(train, params, feature_col, label_col, weight_col, spark):
     scala_map = spark._jvm.PythonUtils.toScalaMap(params)
     j = JavaWrapper._new_java_obj(
         "ml.dmlc.xgboost4j.scala.spark.XGBoostClassifier", scala_map) \
@@ -120,8 +113,7 @@ def train_model(train, params, feature_col, label_col, weight_col):
     jmodel = j.fit(train._jdf)
     return jmodel
 
-def predict(model, data):
-    spark = get_spark(app_name="pyspark-xgb")
+def predict(model, data, spark):
     preds = model.transform(data._jdf)
     prediction = DataFrame(preds, spark)
     return prediction
@@ -131,8 +123,7 @@ def save_model(model, path):
     jbooster = model.nativeBooster()
     jbooster.saveModel(path)
 
-def load_model(path):
-    spark = get_spark(app_name="pyspark-xgb")
+def load_model(path, spark):
     print(path)
     if os.path.exists(path):
         scala_xgb = spark.sparkContext._jvm.ml.dmlc.xgboost4j.scala.XGBoost
@@ -190,9 +181,9 @@ def calculate_statistics(predictions, label_col, multiclass=False, log=False):
     return score
 
 
-def cross_validate(train, valid, xgb_params, features_col, label_col, weight_col, multiclass=False, summary=False, log=False):
+def cross_validate(train, valid, xgb_params, features_col, label_col, weight_col, spark, multiclass=False, summary=False, log=False):
     # set param map
-    jmodel = train_model(train, xgb_params, features_col, label_col, weight_col)
+    jmodel = train_model(train, xgb_params, features_col, label_col, weight_col, spark)
     if summary:
         print_summary(jmodel)
 
@@ -206,7 +197,7 @@ def cross_validate(train, valid, xgb_params, features_col, label_col, weight_col
     return score
 
 
-def optimize(train, valid, features_col, label_col, weight_col, cfg):
+def optimize(train, valid, features_col, label_col, weight_col, cfg, spark):
     def objective(trial):
         if cfg['max_depth']:
             max_depth = trial.suggest_int('max_depth', 
@@ -246,9 +237,9 @@ def optimize(train, valid, features_col, label_col, weight_col, cfg):
             colsample_bytree = trial.suggest_float('subsample', 0.3, 1)
         
         xgb_params = {
-            "eta": 0.1, "eval_metric": "aucpr",
+            "eta": 0.1, "eval_metric": cfg['eval_metric'],
             "gamma": 1, "max_depth": 5, "min_child_weight": 1.0,
-            "objective": "binary:logistic", "seed": 0,
+            "objective": cfg['objective'], "seed": 0,
             # xgboost4j only
             "num_round": 100, "num_early_stopping_rounds": 10,
             "maximize_evaluation_metrics": False,   # minimize logloss
@@ -263,7 +254,7 @@ def optimize(train, valid, features_col, label_col, weight_col, cfg):
         xgb_params['subsample'] = subsample
         xgb_params['min_child_weight'] = min_child_weight
         xgb_params['colsample_bytree'] = colsample_bytree
-        score = cross_validate(train, valid, xgb_params, features_col, label_col, weight_col, summary=False)
+        score = cross_validate(train, valid, xgb_params, features_col, label_col, weight_col, spark, summary=False)
         logger_hyperparam.info('xgb_params in trial: %s', xgb_params)
         logger_hyperparam.info('score: %s', score)
         return score

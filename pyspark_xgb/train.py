@@ -3,7 +3,8 @@ import logging
 import traceback
 import numpy as np
 from pyspark.ml.feature import VectorAssembler
-from spark import get_spark
+from spark import ProjectContext
+from pyspark.sql import SparkSession
 from utils import create_feature_map, create_feature_imp, load_config
 from utils import weight_mapping, train_model, load_model, predict, udf_logloss, save_model, optimize
 assert len(os.environ.get('SPARK_HOME')) != 0, 'SPARK_HOME not set'
@@ -28,7 +29,9 @@ def main():
 
     try:
         config = load_config(CONFIG_PATH)
-        spark = get_spark(app_name="pyspark-xgb")
+        spark = ProjectContext(config)
+        spark = SparkSession.builder.getOrCreate()
+
         # load data
         train = spark.read.parquet(DATASET_PATH + '/train')
         valid = spark.read.parquet(DATASET_PATH + '/valid')
@@ -59,9 +62,9 @@ def main():
         print(valid.count())
         
 
-        best_params = optimize(train, valid, FEATURES, LABEL, WEIGHT, config)
+        best_params = optimize(train, valid, FEATURES, LABEL, WEIGHT, config, spark)
         logger_params.info('Best parameters: %s', best_params)
-        jmodel = train_model(train, best_params, FEATURES, LABEL, WEIGHT)
+        jmodel = train_model(train, best_params, FEATURES, LABEL, WEIGHT, spark)
         model_path = MODEL_PATH + '/model.bin'
         save_model(jmodel, model_path)
 
@@ -79,8 +82,8 @@ def main():
 
         # [Optional] load model training by xgboost, predict and get validation metric
         local_model_path = LOCAL_MODEL_PATH + '/model.bin'
-        xgb_cls_model = load_model(local_model_path)
-        pred = predict(xgb_cls_model, valid)
+        xgb_cls_model = load_model(local_model_path, spark)
+        pred = predict(xgb_cls_model, valid, spark)
         slogloss = pred.withColumn('log_loss', udf_logloss(LABEL, 'probability')) \
             .agg({"log_loss": "mean"}).collect()[0]['avg(log_loss)']
         print('[xgboost] valid logloss: {}'.format(slogloss))

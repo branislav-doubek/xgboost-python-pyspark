@@ -2,7 +2,8 @@ import os
 import traceback
 import numpy as np
 from pyspark.ml.feature import VectorAssembler
-from spark import get_spark, get_logger
+from pyspark.sql import SparkSession
+from spark import ProjectContext
 from utils import load_config, predict, load_model 
 
 # assert len(os.environ.get('JAVA_HOME')) != 0, 'JAVA_HOME not set'
@@ -24,7 +25,8 @@ def main():
     try:
         config = load_config(CONFIG_PATH)
         # init spark
-        spark = get_spark(app_name="pyspark-xgb")
+        spark = ProjectContext(config)
+        spark = SparkSession.builder.getOrCreate()
 
         # load data
         score = spark.read.parquet(DATASET_PATH + '/score')
@@ -44,8 +46,8 @@ def main():
         score = assembler.transform(score).select(FEATURES)
         # [Optional] load model training by xgboost, predict and get validation metric
         local_model_path = LOCAL_MODEL_PATH + '/model.bin'
-        xgb_cls_model = load_model(local_model_path)
-        pred = predict(xgb_cls_model, score)
+        xgb_cls_model = load_model(local_model_path, spark)
+        pred = predict(xgb_cls_model, score, spark)
 
         pred.write.parquet("/data_output/prediction")
 
