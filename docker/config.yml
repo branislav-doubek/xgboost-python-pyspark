@@ -1,3 +1,4 @@
+
 labels:
     sql_path: 'src/o2sk_utils/labels/sql/labels_daily.sql'
     labels_path: 'C:\\Users\\doube\\o2sk\\o2sk-utils\\data\\labels\\'
@@ -67,13 +68,44 @@ modeling:
     params_result_path: /home/frovis/o2_sk/xgboost-python-pyspark/docker/experiment/binary_results.csv
     best_params_path: /home/frovis/o2_sk/xgboost-python-pyspark/docker/experiment/binary.yml
     model_path: /home/frovis/o2_sk/xgboost-python-pyspark/docker/experiment/
+    spark_config:
+      'spark.default.parallelism': '100'
+      'spark.dynamicAllocation.enabled': 'false'
+      'spark.driver.memory': '10g'
+      'spark.driver.cores': '4'
+      'spark.driver.memoryOverhead': '4g'
+      'spark.driver.maxResultSize': '10g'
+      'spark.executor.memory': '10g'
+      'spark.executor.cores': '4'
+      'spark.executor.memoryOverhead': '4g'
+      'spark.executor.instances': '3'
+      'spark.executor.heartbeatInterval': '120s'
+      'spark.network.timeout': '12000s'
+      'spark.sql.inMemoryColumnarStorage.compressed': 'true'
+      'spark.sql.autoBroadcastJoinThreshold': -1
+      'spark.serializer': 'org.apache.spark.serializer.KryoSerializer'
 scoring:
     safe_cols: ['ID_CUSTOMER', 'LABEL', 'CD_PERIOD']
     model_path: '/home/frovis/o2_sk/xgboost-python-pyspark/docker/experiment/model.bin'
     data_path: '/home/frovis/o2_sk/xgboost-python-pyspark/docker/data/'
     scoring_output_path: '/home/frovis/o2_sk/xgboost-python-pyspark/docker/experiment/'
     docker_config_path: /home/frovis/o2_sk/xgboost-python-pyspark/docker/config_scoring.yml
-
+    spark_config:
+      'spark.default.parallelism': '100'
+      'spark.dynamicAllocation.enabled': 'false'
+      'spark.driver.memory': '10g'
+      'spark.driver.cores': '4'
+      'spark.driver.memoryOverhead': '4g'
+      'spark.driver.maxResultSize': '10g'
+      'spark.executor.memory': '10g'
+      'spark.executor.cores': '4'
+      'spark.executor.memoryOverhead': '4g'
+      'spark.executor.instances': '3'
+      'spark.executor.heartbeatInterval': '120s'
+      'spark.network.timeout': '12000s'
+      'spark.sql.inMemoryColumnarStorage.compressed': 'true'
+      'spark.sql.autoBroadcastJoinThreshold': -1
+      'spark.serializer': 'org.apache.spark.serializer.KryoSerializer'
 auth_cfg: '/home/o2spark/config.ini'
 
 
