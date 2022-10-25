@@ -29,8 +29,11 @@ def main():
 
     try:
         config = load_config(CONFIG_PATH)
-        spark = ProjectContext(config)
-        spark = SparkSession.builder.getOrCreate()
+        spark = SparkSession \
+        .builder \
+        .appName('xgb-docker') \
+        .master("local") \
+        .getOrCreate()
 
         # load data
         train = spark.read.parquet(DATASET_PATH + '/train')
