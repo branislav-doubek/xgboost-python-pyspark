@@ -198,6 +198,7 @@ def cross_validate(train, valid, xgb_params, features_col, label_col, weight_col
 
 
 def return_suggest_categorical(trial, cfg, variable_name):
+    print(cfg)
     return trial.suggest_categorical(name=cfg[variable_name], 
                                      choices=cfg[variable_name]['choices'])
 
