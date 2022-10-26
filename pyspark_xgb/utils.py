@@ -229,11 +229,11 @@ def return_suggest_uniform(trial, cfg, variable_name):
 
 
 def get_default_params(cfg=False):
+    print(cfg)
     def_xgb_params = {
             "eta": 0.1, "eval_metric": cfg['eval_metric'],
             "gamma": 1, "max_depth": 5, "min_child_weight": 1.0,
             "objective": cfg['objective'], "seed": 0,
-            
             # xgboost4j only
             "num_round": 100, "num_early_stopping_rounds": 10,
             "maximize_evaluation_metrics": False,   # minimize logloss
