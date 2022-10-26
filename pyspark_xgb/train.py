@@ -57,7 +57,8 @@ def main():
         valid = weight_mapping(valid, LABEL, weights)[0]
         train = assembler.transform(train).select(FEATURES, LABEL, WEIGHT)
         valid = assembler.transform(valid).select(FEATURES, LABEL, WEIGHT)
-        
+        get_default_params(config)
+
         if config['mode'] == 'hyperopt' and 'search_space' in config.keys():
             best_params = optimize(train, valid, FEATURES, LABEL, WEIGHT, config, spark)
         else:
