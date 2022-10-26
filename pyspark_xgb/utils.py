@@ -228,7 +228,7 @@ def return_suggest_uniform(trial, cfg, variable_name):
                             )
 
 
-def get_default_params(cfg):
+def get_default_params(cfg=False):
     def_xgb_params = {
             "eta": 0.1, "eval_metric": cfg['eval_metric'],
             "gamma": 1, "max_depth": 5, "min_child_weight": 1.0,
@@ -267,19 +267,20 @@ def suggest_by_type(cfg, trial):
     return def_xgb_params
 
 def optimize(train, valid, features_col, label_col, weight_col, cfg, spark):
-    xgb_params = get_default_params()
     def objective(trial):
         suggested_params = suggest_by_type(cfg, trial)
-        if int(suggested_params['num_class']) > 2:
-            xgb_params['num_class'] = int(cfg['num_class'])
+        if int(cfg['num_class']) > 2:
+            suggested_params['num_class'] = int(cfg['num_class'])
         score = cross_validate(train, valid, suggested_params, features_col, label_col, weight_col, spark, summary=False)
-        logger_hyperparam.info('xgb_params in trial: %s', xgb_params)
+        logger_hyperparam.info('xgb_params in trial: %s', suggested_params)
         logger_hyperparam.info('score: %s', score)
         return score
 
     study = optuna.create_study(direction='maximize')
     study.optimize(objective, n_trials=cfg['n_trials'])
     
+    xgb_params = get_default_params()
+
     best_params = study.best_params
     for param in best_params.keys():
         xgb_params[param] = best_params[param]
