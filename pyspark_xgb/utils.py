@@ -246,6 +246,7 @@ def get_default_params(cfg=False):
     return def_xgb_params
     
 def suggest_by_type(cfg, trial):
+    print(cfg)
     def_xgb_params = get_default_params()
     
     func_map = {
