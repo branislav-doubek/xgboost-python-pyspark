@@ -228,7 +228,7 @@ def return_suggest_uniform(trial, cfg, variable_name):
                             )
 
 
-def get_default_params(cfg=False):
+def get_default_params(cfg):
     print(cfg)
     def_xgb_params = {
             "eta": 0.1, "eval_metric": cfg['eval_metric'],
@@ -246,8 +246,7 @@ def get_default_params(cfg=False):
     return def_xgb_params
     
 def suggest_by_type(cfg, trial):
-    print(cfg)
-    def_xgb_params = get_default_params()
+    def_xgb_params = get_default_params(cfg)
     
     func_map = {
                     'categorical': return_suggest_categorical,
@@ -280,7 +279,7 @@ def optimize(train, valid, features_col, label_col, weight_col, cfg, spark):
     study = optuna.create_study(direction='maximize')
     study.optimize(objective, n_trials=cfg['n_trials'])
     
-    xgb_params = get_default_params()
+    xgb_params = get_default_params(cfg)
 
     best_params = study.best_params
     for param in best_params.keys():
