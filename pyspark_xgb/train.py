@@ -5,7 +5,7 @@ import numpy as np
 from pyspark.ml.feature import VectorAssembler
 from spark import ProjectContext
 from pyspark.sql import SparkSession
-from utils import create_feature_map, create_feature_imp, load_config
+from utils import create_feature_map, create_feature_imp, load_config, get_default_params
 from utils import weight_mapping, train_model, load_model, predict, udf_logloss, save_model, optimize
 assert len(os.environ.get('SPARK_HOME')) != 0, 'SPARK_HOME not set'
 assert not os.environ.get(
@@ -54,18 +54,14 @@ def main():
         features = [c for c in train.columns if c not in safe_cols]
         assembler = VectorAssembler(inputCols=features, outputCol=FEATURES)
         train, weights = weight_mapping(train, LABEL)
-        print(weights)
-        print(train.count())
         valid = weight_mapping(valid, LABEL, weights)[0]
-        print(train.count())
         train = assembler.transform(train).select(FEATURES, LABEL, WEIGHT)
-        print(train.count())
-        print(valid.count())
         valid = assembler.transform(valid).select(FEATURES, LABEL, WEIGHT)
-        print(valid.count())
         
-
-        best_params = optimize(train, valid, FEATURES, LABEL, WEIGHT, config, spark)
+        if config['mode'] == 'hyperopt' and 'search_space' in config.keys():
+            best_params = optimize(train, valid, FEATURES, LABEL, WEIGHT, config, spark)
+        else:
+            best_params = get_default_params(config)
         logger_params.info('Best parameters: %s', best_params)
         jmodel = train_model(train, best_params, FEATURES, LABEL, WEIGHT, spark)
         model_path = MODEL_PATH + '/model.bin'

@@ -197,64 +197,82 @@ def cross_validate(train, valid, xgb_params, features_col, label_col, weight_col
     return score
 
 
-def optimize(train, valid, features_col, label_col, weight_col, cfg, spark):
-    def objective(trial):
-        if cfg['max_depth']:
-            max_depth = trial.suggest_int('max_depth', 
-                                          cfg['max_depth'][0], 
-                                          cfg['max_depth'][1])
-        else:
-            max_depth = trial.suggest_int('max_depth', 5, 30)
-        if cfg['eta']:
-            eta = trial.suggest_loguniform('eta', 
-                                    cfg['eta'][0], 
-                                    cfg['eta'][1])
-        else:
-            eta = trial.suggest_loguniform('eta', 0.001, 0.01)
-        if cfg['gamma']:
-            gamma = trial.suggest_float('gamma', 
-                                    cfg['gamma'][0], 
-                                    cfg['gamma'][1])
-        else:
-            gamma = trial.suggest_float('eta', 1, 30)
-        if cfg['subsample']:
-            subsample = trial.suggest_float('subsample', 
-                                    cfg['subsample'][0], 
-                                    cfg['subsample'][1])
-        else:
-            subsample = trial.suggest_float('subsample', 0.01, 0.6)
-        if cfg['min_child_weight']:
-            min_child_weight = trial.suggest_float('min_child_weight', 
-                                    cfg['min_child_weight'][0], 
-                                    cfg['min_child_weight'][1])
-        else:
-            min_child_weight = trial.suggest_float('subsample', 1, 50)
-        if cfg['colsample_bytree']:
-            colsample_bytree = trial.suggest_float('colsample_bytree', 
-                                    cfg['colsample_bytree'][0], 
-                                    cfg['colsample_bytree'][1])
-        else:
-            colsample_bytree = trial.suggest_float('subsample', 0.3, 1)
-        
-        xgb_params = {
+def return_suggest_categorical(trial, cfg, variable_name):
+    return trial.suggest_categorical(name=cfg[variable_name], 
+                                     choices=cfg[variable_name]['choices'])
+
+def return_suggest_float(trial, cfg, variable_name):
+    return trial.suggest_float(name=cfg[variable_name], 
+                               low=cfg[variable_name]['low'],
+                               high=cfg[variable_name]['high'],
+                               log=cfg[variable_name]['log'],
+                               )
+
+def return_suggest_int(trial, cfg, variable_name):
+    return trial.suggest_int(name=cfg[variable_name], 
+                             low=cfg[variable_name]['low'],
+                             high=cfg[variable_name]['high'],
+                             log=cfg[variable_name]['log'],
+                            )
+
+def return_suggest_loguniform(trial, cfg, variable_name):
+    return trial.suggest_int(name=cfg[variable_name], 
+                             low=cfg[variable_name]['low'],
+                             high=cfg[variable_name]['high']
+                            )
+
+def return_suggest_uniform(trial, cfg, variable_name):
+    return trial.suggest_int(name=cfg[variable_name], 
+                             low=cfg[variable_name]['low'],
+                             high=cfg[variable_name]['high']
+                            )
+
+
+def get_default_params(cfg):
+    def_xgb_params = {
             "eta": 0.1, "eval_metric": cfg['eval_metric'],
             "gamma": 1, "max_depth": 5, "min_child_weight": 1.0,
             "objective": cfg['objective'], "seed": 0,
+            
             # xgboost4j only
             "num_round": 100, "num_early_stopping_rounds": 10,
             "maximize_evaluation_metrics": False,   # minimize logloss
             "num_workers": 1, "use_external_memory": False,
             "missing": np.nan,
-        }
-        if int(cfg['num_class']) > 2:
+        }    
+    if cfg:
+        for key in cfg['default_params'].keys():
+            def_xgb_params[key] = cfg['default_params'][key] 
+    return def_xgb_params
+    
+def suggest_by_type(cfg, trial):
+    def_xgb_params = get_default_params()
+    
+    func_map = {
+                    'categorical': return_suggest_categorical,
+                    'float': return_suggest_float,
+                    'int': return_suggest_int,
+                    'loguniform': return_suggest_loguniform,
+                    'uniform': return_suggest_uniform,
+                }
+
+
+    for category in cfg['search_space'].keys():
+        if category in func_map.keys():
+            for variable in cfg['search_space'][category].keys():
+                def_xgb_params[variable] = func_map[category](trial, cfg['search_space'][category], variable)
+        else:
+            print(f'For {category} we were not able to provide transformation')
+
+    return def_xgb_params
+
+def optimize(train, valid, features_col, label_col, weight_col, cfg, spark):
+    xgb_params = get_default_params()
+    def objective(trial):
+        suggested_params = suggest_by_type(cfg, trial)
+        if int(suggested_params['num_class']) > 2:
             xgb_params['num_class'] = int(cfg['num_class'])
-        xgb_params['max_depth'] = max_depth
-        xgb_params['eta'] = eta
-        xgb_params['gamma'] = gamma
-        xgb_params['subsample'] = subsample
-        xgb_params['min_child_weight'] = min_child_weight
-        xgb_params['colsample_bytree'] = colsample_bytree
-        score = cross_validate(train, valid, xgb_params, features_col, label_col, weight_col, spark, summary=False)
+        score = cross_validate(train, valid, suggested_params, features_col, label_col, weight_col, spark, summary=False)
         logger_hyperparam.info('xgb_params in trial: %s', xgb_params)
         logger_hyperparam.info('score: %s', score)
         return score
@@ -263,6 +281,8 @@ def optimize(train, valid, features_col, label_col, weight_col, cfg, spark):
     study.optimize(objective, n_trials=cfg['n_trials'])
     
     best_params = study.best_params
-    print(f'Best params {best_params}')
-    return best_params
+    for param in best_params.keys():
+        xgb_params[param] = best_params[param]
+    print(f'Best params {xgb_params}')
+    return xgb_params
 
