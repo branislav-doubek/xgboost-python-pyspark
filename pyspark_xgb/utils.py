@@ -230,7 +230,6 @@ def return_suggest_uniform(trial, cfg, variable_name):
 
 
 def get_default_params(cfg):
-    print(cfg)
     def_xgb_params = {
             "eta": 0.1, "eval_metric": cfg['eval_metric'],
             "gamma": 1, "max_depth": 5, "min_child_weight": 1.0,
@@ -261,6 +260,7 @@ def suggest_by_type(cfg, trial):
     for category in cfg['search_space'].keys():
         if category in func_map.keys():
             for variable in cfg['search_space'][category].keys():
+                print(f'Setting up {variable}')
                 def_xgb_params[variable] = func_map[category](trial, cfg['search_space'][category], variable)
         else:
             print(f'For {category} we were not able to provide transformation')
