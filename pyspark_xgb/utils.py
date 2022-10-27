@@ -199,14 +199,14 @@ def cross_validate(train, valid, xgb_params, features_col, label_col, weight_col
 
 def return_suggest_categorical(trial, cfg, variable_name):
     print(cfg)
-    print(list(cfg[variable_name].keys())[0])
-    return trial.suggest_categorical(name=list(cfg[variable_name].keys())[0], 
+    print(variable_name)
+    return trial.suggest_categorical(name=variable_name, 
                                      choices=cfg[variable_name]['choices'])
 
 def return_suggest_float(trial, cfg, variable_name):
     print(cfg)
-    print(list(cfg[variable_name].keys())[0])
-    return trial.suggest_float(name=list(cfg[variable_name].keys())[0], 
+    print(variable_name)
+    return trial.suggest_float(name=variable_name, 
                                low=cfg[variable_name]['low'],
                                high=cfg[variable_name]['high'],
                                log=cfg[variable_name]['log'],
@@ -214,8 +214,8 @@ def return_suggest_float(trial, cfg, variable_name):
 
 def return_suggest_int(trial, cfg, variable_name):
     print(cfg)
-    print(list(cfg[variable_name].keys())[0])
-    return trial.suggest_int(name=list(cfg[variable_name].keys())[0],
+    print(variable_name)
+    return trial.suggest_int(name=variable_name,
                              low=cfg[variable_name]['low'],
                              high=cfg[variable_name]['high'],
                              log=cfg[variable_name]['log'],
@@ -223,16 +223,16 @@ def return_suggest_int(trial, cfg, variable_name):
 
 def return_suggest_loguniform(trial, cfg, variable_name):
     print(cfg)
-    print(list(cfg[variable_name].keys())[0])
-    return trial.suggest_int(name=list(cfg[variable_name].keys())[0],
+    print(variable_name)
+    return trial.suggest_int(name=variable_name,
                              low=cfg[variable_name]['low'],
                              high=cfg[variable_name]['high']
                             )
 
 def return_suggest_uniform(trial, cfg, variable_name):
     print(cfg)
-    print(list(cfg[variable_name].keys())[0])
-    return trial.suggest_int(name=list(cfg[variable_name].keys())[0],
+    print(variable_name)
+    return trial.suggest_int(name=variable_name,
                              low=cfg[variable_name]['low'],
                              high=cfg[variable_name]['high']
                             )
